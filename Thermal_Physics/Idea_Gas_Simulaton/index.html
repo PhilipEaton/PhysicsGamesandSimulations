@@ -683,28 +683,29 @@
       const avgKE = N > 0 ? U / N : 0;
       const Tsim = avgKE;
 
-      const x = 750;
+      const x1 = 750;
       const y = 405;
 
-      drawText(`Scenario: ${scenarioDisplayName(scenario)}`, x, y);
-      drawText(`Particles: ${N}`, x, y + 30);
-      drawText(`Total U: ${U.toLocaleString(undefined, { maximumFractionDigits: 1 })}`, x, y + 60);
-      drawText(`Avg KE: ${avgKE.toLocaleString(undefined, { maximumFractionDigits: 1 })}`, x, y + 90);
-      drawText(`Sim T: ${Tsim.toLocaleString(undefined, { maximumFractionDigits: 1 })}`, x, y + 120);
-      drawText(`Status: ${paused ? "Paused" : "Running"}`, x, y + 150);
+      drawText(`Scenario: ${scenarioDisplayName(scenario)}`, x1, y);
+      drawText(`Particles: ${N}`, x1, y + 30);
+      drawText(`Total U: ${U.toLocaleString(undefined, { maximumFractionDigits: 1 })}`, x1, y + 60);
+      drawText(`Avg KE: ${avgKE.toLocaleString(undefined, { maximumFractionDigits: 1 })}`, x1, y + 90);
+      drawText(`Sim T: ${Tsim.toLocaleString(undefined, { maximumFractionDigits: 1 })}`, x1, y + 120);
+      drawText(`Status: ${paused ? "Paused" : "Running"}`, x1, y + 150);
 
+      const x2 = 750;
       const y2 = y + 180;
-      drawText("Keyboard", x, y2);
-      drawText("1-5 select scenario", x, y2 + 25, BLACK, true);
-      drawText("SPACE pause/unpause", x, y2 + 45, BLACK, true);
-      drawText("R reset scenario", x, y2 + 65, BLACK, true);
-      drawText("ESC stop animation", x, y2 + 85, BLACK, true);
+      drawText("Keyboard", x2, y2);
+      drawText("1-5 select scenario", x2, y2 + 25, BLACK, true);
+      drawText("SPACE pause/unpause", x2, y2 + 45, BLACK, true);
+      drawText("R reset scenario", x2, y2 + 65, BLACK, true);
+      drawText("ESC stop animation", x2, y2 + 85, BLACK, true);
     }
 
     function drawHeader() {
       drawText("Ideal Gas: Microscopic Motion and Internal Energy", 30, 20);
       drawText(
-        "Elastic collisions conserve total kinetic energy, so a closed ideal gas should keep constant internal energy.",
+        "An isolated ideal gas should keep constant internal energy.",
         30,
         HEIGHT - 28,
         DARK_GRAY,
