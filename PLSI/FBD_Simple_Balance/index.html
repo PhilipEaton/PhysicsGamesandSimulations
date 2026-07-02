@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FBD Balance Trainer</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #d8d8d8;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    canvas {
+      background: #ffffff;
+      border: 1px solid #333;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="900" height="650"></canvas>
+
+  <script>
+    // ============================================================
+    // FBD Balance Trainer
+    // ============================================================
+    //
+    // Goal:
+    //   Students draw the horizontal and vertical components needed
+    //   to balance a given free body diagram.
+    //
+    // Controls:
+    //   Click "Horizontal Component" or "Vertical Component"
+    //   Drag from the block to draw that component
+    //   Next Problem button or SPACE - new problem
+    //   Reset button or R - clear current answers
+    // ============================================================
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // ----------------------------
+    // Basic settings
+    // ----------------------------
+
+    const WIDTH = 900;
+    const HEIGHT = 650;
+    const FPS = 60;
+
+    const CENTER = { x: WIDTH / 2, y: HEIGHT / 2 };
+
+    // Pixels per Newton for drawing arrows
+    const FORCE_SCALE = 4;
+
+    // Forces will be random multiples of this
+    const MIN_FORCE = 10;
+    const MAX_FORCE = 60;
+    const FORCE_STEP = 10;
+
+    // How close the student's answer needs to be, measured in Newtons
+    const BASE_TOLERANCE = 5;
+    const PERCENT_TOLERANCE = 0.12;
+
+    // Visual spacing
+    const LABEL_DISTANCE = 32;
+    const STACK_SPACING = 28;
+    const ARROW_START_DISTANCE = 38;
+    const ARROWHEAD_SIZE = 14;
+
+    // Safe drawing area for arrows and labels
+    const SCREEN_MARGIN = 80;
+    const TOP_DRAW_LIMIT = 170;
+    const BOTTOM_DRAW_LIMIT = HEIGHT - 170;
+
+    // Colors
+    const WHITE = "rgb(255, 255, 255)";
+    const BLACK = "rgb(20, 20, 20)";
+    const GRAY = "rgb(180, 180, 180)";
+    const LIGHT_GRAY = "rgb(230, 230, 230)";
+    const DARK_GRAY = "rgb(90, 90, 90)";
+    const BLUE = "rgb(60, 120, 220)";
+    const RED = "rgb(220, 70, 70)";
+    const GREEN = "rgb(50, 170, 90)";
+    const ORANGE = "rgb(240, 150, 50)";
+    const PURPLE = "rgb(140, 80, 200)";
+
+    // ----------------------------
+    // Vector helpers
+    // ----------------------------
+
+    function vec(x = 0, y = 0) {
+      return { x, y };
+    }
+
+    function copy(v) {
+      return { x: v.x, y: v.y };
+    }
+
+    function add(a, b) {
+      return { x: a.x + b.x, y: a.y + b.y };
+    }
+
+    function sub(a, b) {
+      return { x: a.x - b.x, y: a.y - b.y };
+    }
+
+    function mul(v, s) {
+      return { x: v.x * s, y: v.y * s };
+    }
+
+    function length(v) {
+      return Math.sqrt(v.x * v.x + v.y * v.y);
+    }
+
+    function normalize(v) {
+      const mag = length(v);
+      if (mag < 1e-9) return vec(0, 0);
+      return vec(v.x / mag, v.y / mag);
+    }
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function randChoice(array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+    function getMousePos(event) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY
+      };
+    }
+
+    // ----------------------------
+    // Drawing helpers
+    // ----------------------------
+
+    function drawText(text, x, y, size = 28, color = BLACK) {
+      ctx.fillStyle = color;
+      ctx.font = `${size}px Arial`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(text, x, y);
+    }
+
+    function drawCenteredText(text, x, y, size = 24, color = BLACK) {
+      ctx.fillStyle = color;
+      ctx.font = `${size}px Arial`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x, y);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+    }
+
+    function roundRect(x, y, w, h, radius, fillColor, strokeColor = null, lineWidth = 1) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+
+      if (fillColor) {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+      }
+
+      if (strokeColor) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+    }
+
+    function drawBlock() {
+      const blockSize = 70;
+      const x = CENTER.x - blockSize / 2;
+      const y = CENTER.y - blockSize / 2;
+
+      ctx.fillStyle = LIGHT_GRAY;
+      ctx.fillRect(x, y, blockSize, blockSize);
+
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, blockSize, blockSize);
+    }
+
+    function drawArrow(start, forceVec, color, label = null, width = 4, offset = vec(0, 0)) {
+      /*
+        Draws an arrow representing a force vector.
+
+        forceVec is in Newtons, with +x right and +y up.
+        Canvas screen coordinates use +y down, so we flip y when drawing.
+
+        offset is a screen-coordinate offset used to separate overlapping arrows.
+      */
+
+      const baseStart = add(start, offset);
+
+      const screenVec = vec(forceVec.x * FORCE_SCALE, -forceVec.y * FORCE_SCALE);
+
+      if (length(screenVec) < 1) {
+        return;
+      }
+
+      const direction = normalize(screenVec);
+
+      // Shift the arrow's starting point from the center toward the edge of the block.
+      const arrowStart = add(baseStart, mul(direction, ARROW_START_DISTANCE));
+
+      // Also shift the endpoint outward so the visible arrow length still represents the force.
+      const end = add(arrowStart, screenVec);
+
+      const perp = vec(-direction.y, direction.x);
+
+      // Stop the line before the arrowhead tip so the arrowhead is visually distinct.
+      const lineEnd = sub(end, mul(direction, ARROWHEAD_SIZE * 0.75));
+
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(arrowStart.x, arrowStart.y);
+      ctx.lineTo(lineEnd.x, lineEnd.y);
+      ctx.stroke();
+
+      const p1 = end;
+      const p2 = add(sub(end, mul(direction, ARROWHEAD_SIZE)), mul(perp, ARROWHEAD_SIZE * 0.5));
+      const p3 = sub(sub(end, mul(direction, ARROWHEAD_SIZE)), mul(perp, ARROWHEAD_SIZE * 0.5));
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.lineTo(p3.x, p3.y);
+      ctx.closePath();
+      ctx.fill();
+
+      if (label !== null) {
+        const labelPos = add(end, mul(direction, LABEL_DISTANCE));
+
+        ctx.fillStyle = color;
+        ctx.font = "28px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, labelPos.x, labelPos.y);
+
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+      }
+    }
+
+    // ----------------------------
+    // Button class
+    // ----------------------------
+
+    class Button {
+      constructor(x, y, w, h, text, value) {
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.h = h;
+        this.text = text;
+        this.value = value;
+      }
+
+      contains(mouse) {
+        return (
+          mouse.x >= this.x &&
+          mouse.x <= this.x + this.w &&
+          mouse.y >= this.y &&
+          mouse.y <= this.y + this.h
+        );
+      }
+
+      draw(active = false, solved = false) {
+        let fillColor = LIGHT_GRAY;
+        let borderColor = DARK_GRAY;
+        let textColor = BLACK;
+
+        if (solved) {
+          fillColor = GREEN;
+          borderColor = GREEN;
+          textColor = WHITE;
+        } else if (active) {
+          fillColor = ORANGE;
+          borderColor = ORANGE;
+          textColor = WHITE;
+        } else if (this.contains(mousePos)) {
+          fillColor = "rgb(220, 220, 220)";
+        }
+
+        roundRect(this.x, this.y, this.w, this.h, 8, fillColor, borderColor, 3);
+        drawCenteredText(this.text, this.x + this.w / 2, this.y + this.h / 2, 24, textColor);
+      }
+    }
+
+    // ----------------------------
+    // Force/game helpers
+    // ----------------------------
+
+    function directionKey(forceVec) {
+      if (forceVec.x > 0) {
+        return "right";
+      } else if (forceVec.x < 0) {
+        return "left";
+      } else if (forceVec.y > 0) {
+        return "up";
+      } else if (forceVec.y < 0) {
+        return "down";
+      }
+
+      return "zero";
+    }
+
+    function stackOffset(forceVec, index, total) {
+      /*
+        Returns a screen-coordinate offset so arrows in the same direction
+        do not overlap.
+
+        Right/left arrows are stacked vertically.
+        Up/down arrows are stacked horizontally.
+      */
+
+      if (total <= 1) {
+        return vec(0, 0);
+      }
+
+      // Centers the stack around the block center.
+      const centeredIndex = index - (total - 1) / 2;
+      const distance = centeredIndex * STACK_SPACING;
+
+      const key = directionKey(forceVec);
+
+      if (key === "right" || key === "left") {
+        // Stack horizontal arrows vertically.
+        return vec(0, distance);
+      } else if (key === "up" || key === "down") {
+        // Stack vertical arrows horizontally.
+        return vec(distance, 0);
+      }
+
+      return vec(0, 0);
+    }
+
+    function drawGivenForces(forcesToDraw) {
+      /*
+        Draws the given forces, offsetting forces that point in the same direction
+        so they do not overlap.
+      */
+
+      const groups = {
+        right: [],
+        left: [],
+        up: [],
+        down: []
+      };
+
+      for (const f of forcesToDraw) {
+        groups[directionKey(f)].push(f);
+      }
+
+      for (const key of Object.keys(groups)) {
+        const group = groups[key];
+        const total = group.length;
+
+        for (let i = 0; i < group.length; i++) {
+          const f = group[i];
+          const offset = stackOffset(f, i, total);
+
+          drawArrow(
+            CENTER,
+            f,
+            BLUE,
+            forceLabel(f),
+            5,
+            offset
+          );
+        }
+      }
+    }
+
+    function forceFromDrag(startPos, endPos) {
+      /*
+        Converts a mouse drag into a force vector.
+
+        Screen +y is down, but physics +y is up.
+      */
+
+      const screenVec = sub(endPos, startPos);
+      return vec(screenVec.x / FORCE_SCALE, -screenVec.y / FORCE_SCALE);
+    }
+
+    function componentForceFromDrag(startPos, endPos, activeComponent) {
+      /*
+        Converts a mouse drag into either a horizontal or vertical force component.
+
+        If the horizontal component is active, vertical mouse motion is ignored.
+        If the vertical component is active, horizontal mouse motion is ignored.
+      */
+
+      const rawForce = forceFromDrag(startPos, endPos);
+
+      if (activeComponent === "horizontal") {
+        return vec(rawForce.x, 0);
+      } else if (activeComponent === "vertical") {
+        return vec(0, rawForce.y);
+      }
+
+      return vec(0, 0);
+    }
+
+    function randomForce() {
+      const direction = randChoice([
+        vec(1, 0),    // right
+        vec(-1, 0),   // left
+        vec(0, 1),    // up
+        vec(0, -1)    // down
+      ]);
+
+      const numberOfSteps = Math.floor((MAX_FORCE - MIN_FORCE) / FORCE_STEP);
+      const magnitude = MIN_FORCE + randInt(0, numberOfSteps) * FORCE_STEP;
+
+      return mul(direction, magnitude);
+    }
+
+    function forceLabel(forceVec) {
+      const mag = length(forceVec);
+      return `${mag.toFixed(0)} N`;
+    }
+
+    function isAnswerClose(studentForce, targetForce) {
+      const error = length(sub(studentForce, targetForce));
+      const tolerance = Math.max(BASE_TOLERANCE, PERCENT_TOLERANCE * length(targetForce));
+
+      return {
+        closeEnough: error <= tolerance,
+        error,
+        tolerance
+      };
+    }
+
+    function resetStudentAnswers(currentBalancingForce) {
+      /*
+        Creates the target component forces and resets the student's answers.
+
+        Components with zero magnitude are automatically marked as solved.
+      */
+
+      targetHorizontalForce = vec(currentBalancingForce.x, 0);
+      targetVerticalForce = vec(0, currentBalancingForce.y);
+
+      studentHorizontalForce = vec(0, 0);
+      studentVerticalForce = vec(0, 0);
+
+      horizontalSolved = length(targetHorizontalForce) === 0;
+      verticalSolved = length(targetVerticalForce) === 0;
+    }
+
+    function componentName(activeComponent) {
+      if (activeComponent === "horizontal") {
+        return "horizontal";
+      } else if (activeComponent === "vertical") {
+        return "vertical";
+      }
+
+      return "none";
+    }
+
+    // ----------------------------
+    // Screen-fit checks
+    // ----------------------------
+
+    function arrowEndpoint(start, forceVec, offset = vec(0, 0)) {
+      /*
+        Computes where the arrow tip will be drawn on screen.
+
+        This matches the drawArrow() logic:
+        - start near the block edge
+        - endpoint extends outward from there by the force vector
+      */
+
+      const baseStart = add(start, offset);
+      const screenVec = vec(forceVec.x * FORCE_SCALE, -forceVec.y * FORCE_SCALE);
+
+      if (length(screenVec) < 1) {
+        return baseStart;
+      }
+
+      const direction = normalize(screenVec);
+      const arrowStart = add(baseStart, mul(direction, ARROW_START_DISTANCE));
+      const end = add(arrowStart, screenVec);
+
+      return end;
+    }
+
+    function pointInsideSafeArea(point) {
+      return (
+        SCREEN_MARGIN <= point.x && point.x <= WIDTH - SCREEN_MARGIN &&
+        TOP_DRAW_LIMIT <= point.y && point.y <= BOTTOM_DRAW_LIMIT
+      );
+    }
+
+    function arrowFitsOnScreen(forceVec, offset = vec(0, 0)) {
+      const end = arrowEndpoint(CENTER, forceVec, offset);
+      return pointInsideSafeArea(end);
+    }
+
+    function problemFitsOnScreen(forcesToCheck, currentBalancingForce) {
+      /*
+        Checks that the generated problem will fit on screen.
+
+        This includes:
+        - all given forces
+        - the horizontal balancing component
+        - the vertical balancing component
+      */
+
+      const groups = {
+        right: [],
+        left: [],
+        up: [],
+        down: []
+      };
+
+      for (const f of forcesToCheck) {
+        groups[directionKey(f)].push(f);
+      }
+
+      for (const key of Object.keys(groups)) {
+        const group = groups[key];
+        const total = group.length;
+
+        for (let i = 0; i < group.length; i++) {
+          const f = group[i];
+          const offset = stackOffset(f, i, total);
+
+          if (!arrowFitsOnScreen(f, offset)) {
+            return false;
+          }
+        }
+      }
+
+      // Check student answer components using the same offsets used for drawing.
+      const targetHorizontal = vec(currentBalancingForce.x, 0);
+      const targetVertical = vec(0, currentBalancingForce.y);
+
+      if (length(targetHorizontal) > 0) {
+        if (!arrowFitsOnScreen(targetHorizontal, vec(0, 52))) {
+          return false;
+        }
+      }
+
+      if (length(targetVertical) > 0) {
+        if (!arrowFitsOnScreen(targetVertical, vec(52, 0))) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function generateProblem() {
+      /*
+        Generates 1-4 random forces.
+
+        Rejects cases where:
+        - the net force is zero
+        - any given force arrow would go off screen
+        - either answer component would go off screen
+      */
+
+      while (true) {
+        const numForces = randInt(1, 4);
+        const newForces = [];
+
+        for (let i = 0; i < numForces; i++) {
+          newForces.push(randomForce());
+        }
+
+        let newNetForce = vec(0, 0);
+        for (const f of newForces) {
+          newNetForce = add(newNetForce, f);
+        }
+
+        if (length(newNetForce) === 0) {
+          continue;
+        }
+
+        const newBalancingForce = mul(newNetForce, -1);
+
+        if (problemFitsOnScreen(newForces, newBalancingForce)) {
+          return {
+            forces: newForces,
+            netForce: newNetForce,
+            balancingForce: newBalancingForce
+          };
+        }
+      }
+    }
+
+    function newProblem() {
+      const problem = generateProblem();
+
+      forces = problem.forces;
+      netForce = problem.netForce;
+      balancingForce = problem.balancingForce;
+
+      resetStudentAnswers(balancingForce);
+
+      activeComponent = null;
+      dragging = false;
+      dragStart = CENTER;
+      dragEnd = CENTER;
+    }
+
+    function resetCurrentProblem() {
+      /*
+        Keeps the same generated FBD, but clears the student's current
+        horizontal and vertical component answers.
+      */
+
+      resetStudentAnswers(balancingForce);
+
+      activeComponent = null;
+      dragging = false;
+      dragStart = CENTER;
+      dragEnd = CENTER;
+    }
+
+    // ----------------------------
+    // Main game state
+    // ----------------------------
+
+    let forces = [];
+    let netForce = vec(0, 0);
+    let balancingForce = vec(0, 0);
+
+    let targetHorizontalForce = vec(0, 0);
+    let targetVerticalForce = vec(0, 0);
+
+    let studentHorizontalForce = vec(0, 0);
+    let studentVerticalForce = vec(0, 0);
+
+    let horizontalSolved = false;
+    let verticalSolved = false;
+
+    let activeComponent = null;
+    let dragging = false;
+    let dragStart = CENTER;
+    let dragEnd = CENTER;
+
+    let mousePos = { x: -9999, y: -9999 };
+
+    const horizontalButton = new Button(35, HEIGHT - 145, 250, 45, "Horizontal Component", "horizontal");
+    const verticalButton = new Button(305, HEIGHT - 145, 250, 45, "Vertical Component", "vertical");
+    const resetButton = new Button(575, HEIGHT - 145, 100, 45, "Reset", "reset");
+    const nextProblemButton = new Button(695, HEIGHT - 145, 175, 45, "Next Problem", "next_problem");
+
+    newProblem();
+
+    // ----------------------------
+    // Events
+    // ----------------------------
+
+    canvas.addEventListener("mousemove", (event) => {
+      mousePos = getMousePos(event);
+
+      if (dragging && activeComponent !== null) {
+        dragEnd = mousePos;
+
+        if (activeComponent === "horizontal" && !horizontalSolved) {
+          studentHorizontalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
+        } else if (activeComponent === "vertical" && !verticalSolved) {
+          studentVerticalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
+        }
+      }
+    });
+
+    canvas.addEventListener("mousedown", (event) => {
+      mousePos = getMousePos(event);
+
+      const solved = horizontalSolved && verticalSolved;
+
+      if (resetButton.contains(mousePos)) {
+        resetCurrentProblem();
+        return;
+      }
+
+      if (nextProblemButton.contains(mousePos)) {
+        newProblem();
+        return;
+      }
+
+      if (horizontalButton.contains(mousePos)) {
+        if (!horizontalSolved) {
+          activeComponent = "horizontal";
+        }
+        dragging = false;
+        return;
+      }
+
+      if (verticalButton.contains(mousePos)) {
+        if (!verticalSolved) {
+          activeComponent = "vertical";
+        }
+        dragging = false;
+        return;
+      }
+
+      if (!solved && activeComponent !== null) {
+        if (activeComponent === "horizontal" && !horizontalSolved) {
+          dragging = true;
+          dragStart = CENTER;
+          dragEnd = mousePos;
+          studentHorizontalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
+        } else if (activeComponent === "vertical" && !verticalSolved) {
+          dragging = true;
+          dragStart = CENTER;
+          dragEnd = mousePos;
+          studentVerticalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
+        }
+      }
+    });
+
+    window.addEventListener("mouseup", (event) => {
+      mousePos = getMousePos(event);
+
+      if (dragging && activeComponent !== null) {
+        dragging = false;
+        dragEnd = mousePos;
+
+        if (activeComponent === "horizontal" && !horizontalSolved) {
+          studentHorizontalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
+
+          const result = isAnswerClose(studentHorizontalForce, targetHorizontalForce);
+
+          if (result.closeEnough) {
+            horizontalSolved = true;
+            studentHorizontalForce = copy(targetHorizontalForce);
+            activeComponent = null;
+          }
+        } else if (activeComponent === "vertical" && !verticalSolved) {
+          studentVerticalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
+
+          const result = isAnswerClose(studentVerticalForce, targetVerticalForce);
+
+          if (result.closeEnough) {
+            verticalSolved = true;
+            studentVerticalForce = copy(targetVerticalForce);
+            activeComponent = null;
+          }
+        }
+      }
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === " ") {
+        newProblem();
+        event.preventDefault();
+      } else if (event.key.toLowerCase() === "r") {
+        resetCurrentProblem();
+      }
+    });
+
+    // ----------------------------
+    // Drawing
+    // ----------------------------
+
+    function drawFeedback() {
+      const solved = horizontalSolved && verticalSolved;
+      const feedbackY = HEIGHT - 90;
+
+      if (solved) {
+        drawText("Balanced! Both components are correct.", 30, feedbackY, 28, GREEN);
+        return;
+      }
+
+      if (activeComponent === null) {
+        if (horizontalSolved && !verticalSolved) {
+          drawText("Horizontal component complete. Now choose the vertical component.", 30, feedbackY, 20, BLACK);
+        } else if (verticalSolved && !horizontalSolved) {
+          drawText("Vertical component complete. Now choose the horizontal component.", 30, feedbackY, 20, BLACK);
+        } else {
+          drawText("Choose a component to draw.", 30, feedbackY, 20, BLACK);
+        }
+        return;
+      }
+
+      if (activeComponent === "horizontal") {
+        const result = isAnswerClose(studentHorizontalForce, targetHorizontalForce);
+        drawText(
+          `Drawing horizontal component.`,
+          30,
+          feedbackY,
+          20,
+          BLACK
+        );
+      } else if (activeComponent === "vertical") {
+        const result = isAnswerClose(studentVerticalForce, targetVerticalForce);
+        drawText(
+          `Drawing vertical component.`,
+          30,
+          feedbackY,
+          20,
+          BLACK
+        );
+      }
+    }
+
+    function drawStatus() {
+      const horizontalStatus = horizontalSolved ? "done" : "needed";
+      const verticalStatus = verticalSolved ? "done" : "needed";
+
+      drawText(
+        `Horizontal: ${horizontalStatus}    Vertical: ${verticalStatus}`,
+        30,
+        HEIGHT - 55,
+        24,
+        GRAY
+      );
+    }
+
+    function drawFrame() {
+      ctx.fillStyle = WHITE;
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      drawText("FBD Balance Trainer", 30, 25, 40, BLACK);
+      drawText("Draw the horizontal and vertical forces needed to balance the diagram.", 30, 70, 20, BLACK);
+      drawText("Click a component button, then drag from the block.", 30, 100, 20, BLACK);
+      drawText("Use Next Problem for a new FBD, or Reset to clear this attempt.", 30, 130, 20, BLACK);
+
+      drawBlock();
+
+      // Draw given forces
+      drawGivenForces(forces);
+
+      // Draw solved/student horizontal component
+      if (length(studentHorizontalForce) > 0) {
+        const color = horizontalSolved ? GREEN : ORANGE;
+        drawArrow(
+          CENTER,
+          studentHorizontalForce,
+          color,
+          `${length(studentHorizontalForce).toFixed(0)} N`,
+          5,
+          vec(0, 52)
+        );
+      }
+
+      // Draw solved/student vertical component
+      if (length(studentVerticalForce) > 0) {
+        const color = verticalSolved ? GREEN : ORANGE;
+        drawArrow(
+          CENTER,
+          studentVerticalForce,
+          color,
+          `${length(studentVerticalForce).toFixed(0)} N`,
+          5,
+          vec(52, 0)
+        );
+      }
+
+      horizontalButton.draw(activeComponent === "horizontal", horizontalSolved);
+      verticalButton.draw(activeComponent === "vertical", verticalSolved);
+      resetButton.draw(false, false);
+      nextProblemButton.draw(false, false);
+
+      drawFeedback();
+      drawStatus();
+    }
+
+    function animate() {
+      drawFrame();
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
