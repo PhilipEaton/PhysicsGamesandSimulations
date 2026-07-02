@@ -3,48 +3,98 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Position vs. Time Slope Explorer</title>
+  <title>Accessible Position vs. Time Slope Explorer</title>
   <style>
     :root {
       --bg: #f4f4f4;
       --panel: #ffffff;
       --text: #222222;
       --muted: #555555;
-      --border: #aaaaaa;
-      --curve: #1f6fb2;
-      --tangent: #d35400;
+      --border: #9a9a9a;
+      --curve: #125a9c;
+      --tangent: #a84600;
       --active: #d8ebff;
+      --focus: #000000;
+      --success-bg: #eef8ee;
+      --warn-bg: #fff6df;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
       background: var(--bg);
       color: var(--text);
+      line-height: 1.45;
     }
 
     .page {
-      max-width: 1120px;
+      max-width: 1160px;
       margin: 0 auto;
       padding: 20px;
     }
 
-    h1 {
-      margin: 0 0 6px 0;
-      font-size: 1.8rem;
+    .skip-link {
+      position: absolute;
+      left: -999px;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
     }
 
-    .subtitle {
-      margin: 0 0 16px 0;
-      color: var(--muted);
+    .skip-link:focus {
+      left: 16px;
+      top: 16px;
+      width: auto;
+      height: auto;
+      z-index: 1000;
+      padding: 10px 14px;
+      background: white;
+      border: 3px solid var(--focus);
+      color: var(--text);
     }
 
-    .control-panel {
+    h1 { margin: 0 0 6px 0; font-size: 1.8rem; }
+    h2 { font-size: 1.25rem; margin: 0 0 10px 0; }
+    h3 { font-size: 1.05rem; margin: 14px 0 8px 0; }
+
+    .subtitle { margin: 0 0 16px 0; color: var(--muted); }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .control-panel,
+    .instructions,
+    .accessibility-note,
+    .graph-summary,
+    .data-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 15px;
       margin-bottom: 16px;
+    }
+
+    .control-group {
+      border: 0;
+      padding: 0;
+      margin: 0 0 14px 0;
+    }
+
+    .control-group legend {
+      font-weight: bold;
+      margin-bottom: 8px;
     }
 
     .controls {
@@ -52,10 +102,39 @@
       flex-wrap: wrap;
       gap: 8px;
       margin-bottom: 8px;
+      align-items: center;
     }
 
-    .play-controls {
-      margin-top: 8px;
+    button,
+    input[type="number"],
+    input[type="range"] {
+      font: inherit;
+    }
+
+    button {
+      padding: 8px 12px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      background: white;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    button:hover { background: #eeeeee; }
+
+    button.active,
+    button[aria-pressed="true"] {
+      background: var(--active);
+      border-color: var(--curve);
+      box-shadow: inset 0 0 0 2px var(--curve);
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    canvas:focus-visible,
+    summary:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
     }
 
     .custom-panel {
@@ -65,28 +144,24 @@
       gap: 8px;
       margin-top: 10px;
       padding: 10px;
-      background: var(--panel);
+      background: #fafafa;
       border: 1px solid var(--border);
       border-radius: 6px;
     }
 
-    .custom-panel.visible {
-      display: flex;
-    }
+    .custom-panel.visible { display: flex; }
 
     .custom-panel label {
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      font-size: 0.95rem;
     }
 
     .custom-panel input {
-      width: 70px;
+      width: 78px;
       padding: 6px;
-      border: 1px solid #888;
+      border: 1px solid #777;
       border-radius: 4px;
-      font-size: 0.95rem;
     }
 
     .equation-preview {
@@ -97,23 +172,19 @@
       font-size: 0.95rem;
     }
 
-    button {
-      padding: 8px 12px;
-      border: 1px solid #555;
-      border-radius: 5px;
-      background: white;
-      color: var(--text);
-      cursor: pointer;
-      font-size: 0.95rem;
+    .time-control {
+      display: grid;
+      grid-template-columns: minmax(160px, 1fr) auto;
+      gap: 8px 12px;
+      align-items: center;
+      max-width: 760px;
     }
 
-    button:hover {
-      background: #eeeeee;
-    }
+    .time-control label { font-weight: bold; }
 
-    button.active {
-      background: var(--active);
-      border-color: var(--curve);
+    .time-control input[type="range"] {
+      width: 100%;
+      min-height: 36px;
     }
 
     .main-area {
@@ -121,6 +192,12 @@
       flex-wrap: wrap;
       gap: 20px;
       align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .canvas-wrap {
+      flex: 1 1 760px;
+      min-width: 280px;
     }
 
     canvas {
@@ -131,10 +208,11 @@
       border: 1px solid var(--border);
       border-radius: 6px;
       touch-action: none;
+      display: block;
     }
 
     .info-panel {
-      flex: 1;
+      flex: 1 1 310px;
       min-width: 280px;
       background: var(--panel);
       border: 1px solid var(--border);
@@ -142,13 +220,8 @@
       padding: 15px;
     }
 
-    .info-panel h2 {
-      margin-top: 0;
-      font-size: 1.2rem;
-    }
-
     .readout {
-      line-height: 1.6;
+      line-height: 1.7;
       font-size: 1rem;
     }
 
@@ -160,137 +233,220 @@
     .concept-box {
       margin-top: 15px;
       padding: 10px;
-      border-left: 4px solid #777;
+      border-left: 4px solid #555;
       background: #f7f7f7;
-      line-height: 1.45;
     }
 
-    .instructions {
-      margin-top: 20px;
-      background: var(--panel);
-      border: 1px solid var(--border);
+    .keyboard-help {
+      margin-top: 12px;
+      padding: 10px;
+      background: var(--warn-bg);
+      border: 1px solid #d3b36a;
       border-radius: 6px;
-      padding: 15px;
-      line-height: 1.5;
     }
 
-    .small-note {
-      margin-top: 14px;
-      color: var(--muted);
-      font-size: 0.92rem;
+    .accessibility-note {
+      background: var(--success-bg);
+    }
+
+    .small-note { margin-top: 14px; color: var(--muted); font-size: 0.92rem; }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 8px;
+      background: white;
+    }
+
+    th, td {
+      border: 1px solid #b8b8b8;
+      padding: 6px 8px;
+      text-align: right;
+    }
+
+    th {
+      background: #eeeeee;
+      text-align: center;
+    }
+
+    td:first-child,
+    td:last-child { text-align: center; }
+
+    details summary {
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html:focus-within { scroll-behavior: auto; }
     }
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#controls-heading">Skip to graph controls</a>
   <div class="page">
-    <h1>Position vs. Time Slope Explorer</h1>
-    <p class="subtitle">Explore how the slope of a position-versus-time graph represents velocity.</p>
+    <header>
+      <h1>Position vs. Time Slope Explorer</h1>
+      <p class="subtitle">Explore how the slope of a position-versus-time graph represents velocity.</p>
+    </header>
 
-    <div class="control-panel">
-      <div class="controls graph-controls">
-        <button id="preset1Btn">Preset 1: Constant + Velocity</button>
-        <button id="preset2Btn">Preset 2: + Position, - Velocity</button>
-        <button id="preset3Btn">Preset 3: Turning Point</button>
-        <button id="preset4Btn">Preset 4: Changing Speed</button>
-        <button id="randomBtn">Random</button>
-        <button id="customBtn">Custom</button>
-      </div>
-
-      <div id="customPanel" class="custom-panel">
-        <strong>Custom cubic:</strong>
-        <span>x(t) =</span>
-        <label>a<sub>0</sub><input id="a0Input" type="number" step="0.1" value="0"></label>
-        <span>+</span>
-        <label>a<sub>1</sub>t<input id="a1Input" type="number" step="0.1" value="1"></label>
-        <span>+</span>
-        <label>a<sub>2</sub>t²<input id="a2Input" type="number" step="0.1" value="-0.2"></label>
-        <span>+</span>
-        <label>a<sub>3</sub>t³<input id="a3Input" type="number" step="0.01" value="0.01"></label>
-        <button id="zeroCustomBtn">Set All to 0</button>
-        <div id="equationPreview" class="equation-preview"></div>
-      </div>
-
-      <div class="controls play-controls">
-        <button id="playBtn">Play</button>
-        <button id="stopBtn">Stop</button>
-        <button id="resetBtn">Reset</button>
-      </div>
-    </div>
-
-    <div class="main-area">
-      <canvas id="graphCanvas" width="760" height="520"></canvas>
-
-      <div class="info-panel">
-        <h2>Current Point</h2>
-        <div class="readout">
-          <div>Time, <em>t</em>: <span id="timeReadout" class="value">--</span></div>
-          <div>Position, <em>x</em>: <span id="positionReadout" class="value">--</span></div>
-          <div>Velocity/Slope, <em>v</em>: <span id="velocityReadout" class="value">--</span></div>
-        </div>
-
-        <div id="conceptBox" class="concept-box">
-          Click near the curve or press Play to show the slope line.
-        </div>
-
-        <p class="small-note">
-          The vertical value of the graph is position. <br><br> The slope of the graph is velocity.
+    <main>
+      <section class="instructions" aria-labelledby="instructions-heading">
+        <h2 id="instructions-heading">How to use</h2>
+        <p>
+          Choose a preset, generate a random graph, or create a custom cubic. Move the selected time to see the point and tangent line.
+          The slope of the tangent line is the velocity at that instant.
         </p>
-      </div>
-    </div>
+        <p>
+          Mouse and touch users can click or drag near the curve. Keyboard users can use the selected time slider, step buttons,
+          or arrow keys when the graph has focus.
+        </p>
+      </section>
 
-    <div class="instructions">
-      <strong>How to use:</strong>
-      Choose a preset or generate a random graph. Click near the curve to place a tangent line.
-      Click and drag to move the tangent line along the curve. Press Play to animate the tangent line.
-      Press Stop to pause it. Click away from the curve to hide the tangent line.
-    </div>
+      <section class="control-panel" aria-labelledby="controls-heading">
+        <h2 id="controls-heading">Controls</h2>
+
+        <fieldset class="control-group">
+          <legend>Choose a graph</legend>
+          <div class="controls graph-controls" role="group" aria-label="Graph choices">
+            <button id="preset1Btn" type="button" aria-pressed="true">Preset 1: Constant positive velocity</button>
+            <button id="preset2Btn" type="button" aria-pressed="false">Preset 2: Positive position, negative velocity</button>
+            <button id="preset3Btn" type="button" aria-pressed="false">Preset 3: Turning point</button>
+            <button id="preset4Btn" type="button" aria-pressed="false">Preset 4: Changing speed</button>
+            <button id="randomBtn" type="button" aria-pressed="false">Random graph</button>
+            <button id="customBtn" type="button" aria-pressed="false" aria-controls="customPanel" aria-expanded="false">Custom cubic</button>
+          </div>
+        </fieldset>
+
+        <div id="customPanel" class="custom-panel" aria-labelledby="custom-heading">
+          <strong id="custom-heading">Custom cubic coefficients:</strong>
+          <span aria-hidden="true">x(t) =</span>
+          <label for="a0Input">a<sub>0</sub></label>
+          <input id="a0Input" type="number" step="0.1" value="0" inputmode="decimal" />
+          <span aria-hidden="true">+</span>
+          <label for="a1Input">a<sub>1</sub>, coefficient of t</label>
+          <input id="a1Input" type="number" step="0.1" value="1" inputmode="decimal" />
+          <span aria-hidden="true">+</span>
+          <label for="a2Input">a<sub>2</sub>, coefficient of t squared</label>
+          <input id="a2Input" type="number" step="0.1" value="-0.2" inputmode="decimal" />
+          <span aria-hidden="true">+</span>
+          <label for="a3Input">a<sub>3</sub>, coefficient of t cubed</label>
+          <input id="a3Input" type="number" step="0.01" value="0.01" inputmode="decimal" />
+          <button id="zeroCustomBtn" type="button">Set all coefficients to 0</button>
+          <div id="equationPreview" class="equation-preview" aria-live="polite"></div>
+        </div>
+
+        <fieldset class="control-group">
+          <legend>Move the point on the graph</legend>
+          <div class="controls play-controls" role="group" aria-label="Animation controls">
+            <button id="playBtn" type="button">Play animation</button>
+            <button id="stopBtn" type="button">Stop animation</button>
+            <button id="resetBtn" type="button">Reset point</button>
+            <button id="stepBackBtn" type="button">Step backward</button>
+            <button id="stepForwardBtn" type="button">Step forward</button>
+          </div>
+          <div class="time-control">
+            <label for="timeSlider">Selected time</label>
+            <span id="timeSliderValue" class="value">0.00 s</span>
+            <input id="timeSlider" type="range" min="0" max="10" step="0.05" value="0" aria-describedby="time-slider-help" />
+            <p id="time-slider-help" class="small-note">
+              Use this slider, the step buttons, or the left and right arrow keys when the graph has focus.
+            </p>
+          </div>
+        </fieldset>
+      </section>
+
+      <section class="main-area" aria-label="Graph and current point information">
+        <div class="canvas-wrap">
+          <h2 id="graph-heading">Visual graph</h2>
+          <canvas id="graphCanvas" width="760" height="520" tabindex="0" role="img" aria-labelledby="graph-heading" aria-describedby="canvasDescription"></canvas>
+          <p id="canvasDescription" class="small-note">
+            The canvas shows a position versus time graph and a tangent line at the selected time.
+            The same information is available in the current point panel, graph summary, and data table below.
+          </p>
+        </div>
+
+        <aside class="info-panel" aria-labelledby="current-point-heading">
+          <h2 id="current-point-heading">Current point</h2>
+          <div class="readout" aria-live="polite" aria-atomic="true">
+            <div>Time, <em>t</em>: <span id="timeReadout" class="value">0.00 s</span></div>
+            <div>Position, <em>x</em>: <span id="positionReadout" class="value">--</span></div>
+            <div>Velocity/Slope, <em>v</em>: <span id="velocityReadout" class="value">--</span></div>
+            <div>Direction of motion: <span id="directionReadout" class="value">--</span></div>
+          </div>
+
+          <div id="conceptBox" class="concept-box">
+            The vertical value of the graph is position. The slope of the graph is velocity.
+          </div>
+
+          <div class="keyboard-help">
+            <strong>Keyboard option:</strong> Tab to the selected time slider or the graph. Use Left/Right Arrow to move the point slowly.
+            Use Shift + Left/Right Arrow to move faster. Press Home or End to jump to the beginning or end.
+          </div>
+        </aside>
+      </section>
+
+      <section class="graph-summary" aria-labelledby="summary-heading">
+        <h2 id="summary-heading">Text summary of selected graph</h2>
+        <p id="graphSummaryText">Loading summary.</p>
+      </section>
+
+      <section class="data-panel" aria-labelledby="data-heading">
+        <details>
+          <summary id="data-heading">Show sampled data table</summary>
+          <p>
+            This table gives sampled values from the current graph. It is not every point on the curve,
+            but it gives a screen-reader-friendly representation of the graph's shape.
+          </p>
+          <div id="dataTableContainer"></div>
+        </details>
+      </section>
+
+      <section class="accessibility-note" aria-labelledby="accessibility-heading">
+        <h2 id="accessibility-heading">Accessibility features</h2>
+        <p>
+          This version keeps the visual graph, but it also provides keyboard controls, numeric readouts,
+          a text summary of the graph, and a data table. The graph can be used without clicking or dragging on the canvas.
+        </p>
+      </section>
+
+      <div id="liveStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+    </main>
   </div>
 
   <script>
-    // ------------------------------------------------------------
-    // Canvas and graph setup
-    // ------------------------------------------------------------
-
     const canvas = document.getElementById("graphCanvas");
     const ctx = canvas.getContext("2d");
 
     const W = canvas.width;
     const H = canvas.height;
 
-    const plot = {
-      left: 75,
-      right: W - 35,
-      top: 35,
-      bottom: H - 65
-    };
-
+    const plot = { left: 75, right: W - 35, top: 35, bottom: H - 65 };
     const plotW = plot.right - plot.left;
     const plotH = plot.bottom - plot.top;
 
     const tMin = 0;
     const tMax = 10;
-
     let xMin = -5;
     let xMax = 5;
 
     let currentGraph = null;
-    let selectedT = null;
-    let showTangent = false;
+    let selectedT = 0;
+    let showTangent = true;
     let isPlaying = false;
     let isDragging = false;
     let playT = tMin;
     let lastTimestamp = null;
-
     const playSpeed = 1.25;
-
-    // ------------------------------------------------------------
-    // Interface elements
-    // ------------------------------------------------------------
 
     const timeReadout = document.getElementById("timeReadout");
     const positionReadout = document.getElementById("positionReadout");
     const velocityReadout = document.getElementById("velocityReadout");
+    const directionReadout = document.getElementById("directionReadout");
     const conceptBox = document.getElementById("conceptBox");
+    const graphSummaryText = document.getElementById("graphSummaryText");
+    const dataTableContainer = document.getElementById("dataTableContainer");
+    const liveStatus = document.getElementById("liveStatus");
 
     const preset1Btn = document.getElementById("preset1Btn");
     const preset2Btn = document.getElementById("preset2Btn");
@@ -308,20 +464,25 @@
     const playBtn = document.getElementById("playBtn");
     const stopBtn = document.getElementById("stopBtn");
     const resetBtn = document.getElementById("resetBtn");
+    const stepBackBtn = document.getElementById("stepBackBtn");
+    const stepForwardBtn = document.getElementById("stepForwardBtn");
+    const timeSlider = document.getElementById("timeSlider");
+    const timeSliderValue = document.getElementById("timeSliderValue");
 
     const graphButtons = [preset1Btn, preset2Btn, preset3Btn, preset4Btn, randomBtn, customBtn];
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    // ------------------------------------------------------------
-    // Utility functions
-    // ------------------------------------------------------------
-
-    function clamp(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }
+    function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 
     function formatNumber(value) {
       if (Math.abs(value) < 0.0001) value = 0;
       return value.toFixed(2);
+    }
+
+    function formatSigned(value) {
+      const n = parseFloat(formatNumber(value));
+      if (n > 0) return "+" + n.toFixed(2);
+      return n.toFixed(2);
     }
 
     function graphToScreen(t, x) {
@@ -336,46 +497,28 @@
       return { t, x };
     }
 
-    function randomBetween(min, max) {
-      return min + Math.random() * (max - min);
-    }
-
-    // ------------------------------------------------------------
-    // Polynomial functions
-    // ------------------------------------------------------------
+    function randomBetween(min, max) { return min + Math.random() * (max - min); }
 
     function evalPolynomial(coeffs, t) {
       let sum = 0;
-      for (let i = 0; i < coeffs.length; i++) {
-        sum += coeffs[i] * Math.pow(t, i);
-      }
+      for (let i = 0; i < coeffs.length; i++) sum += coeffs[i] * Math.pow(t, i);
       return sum;
     }
 
     function evalPolynomialDerivative(coeffs, t) {
       let sum = 0;
-      for (let i = 1; i < coeffs.length; i++) {
-        sum += i * coeffs[i] * Math.pow(t, i - 1);
-      }
+      for (let i = 1; i < coeffs.length; i++) sum += i * coeffs[i] * Math.pow(t, i - 1);
       return sum;
     }
 
     function makePolynomialGraph(name, coeffs, description) {
       return {
-        name: name,
-        description: description,
-        x: function(t) {
-          return evalPolynomial(coeffs, t);
-        },
-        v: function(t) {
-          return evalPolynomialDerivative(coeffs, t);
-        }
+        name,
+        description,
+        x: t => evalPolynomial(coeffs, t),
+        v: t => evalPolynomialDerivative(coeffs, t)
       };
     }
-
-    // ------------------------------------------------------------
-    // Preset graphs
-    // ------------------------------------------------------------
 
     function getPreset1() {
       return makePolynomialGraph(
@@ -410,12 +553,10 @@
     }
 
     function readCustomCoefficients() {
-      const values = [a0Input, a1Input, a2Input, a3Input].map(function(input) {
+      return [a0Input, a1Input, a2Input, a3Input].map(input => {
         const value = parseFloat(input.value);
         return Number.isFinite(value) ? value : 0;
       });
-
-      return values;
     }
 
     function getCustomGraph() {
@@ -433,74 +574,40 @@
     }
 
     function showCustomPanel(show) {
-      if (show) {
-        customPanel.classList.add("visible");
-      } else {
-        customPanel.classList.remove("visible");
-      }
+      customPanel.classList.toggle("visible", show);
+      customBtn.setAttribute("aria-expanded", show ? "true" : "false");
     }
-
-    function refreshCustomGraph() {
-      updateEquationPreview();
-
-      if (currentGraph && currentGraph.name === "Custom Cubic") {
-        setGraph(getCustomGraph(), customBtn);
-      }
-    }
-
-    // ------------------------------------------------------------
-    // Random graph generation
-    // ------------------------------------------------------------
 
     function generateRandomGraph() {
-      const degree = Math.floor(randomBetween(2, 6)); // 2, 3, 4, or 5
+      const degree = Math.floor(randomBetween(2, 6));
       const rawCoeffs = [];
 
       for (let i = 0; i <= degree; i++) {
         let scale;
-
-        if (i === 0) {
-          scale = 2.0;
-        } else if (i === 1) {
-          scale = 4.0;
-        } else {
-          scale = 2.5 / i;
-        }
-
+        if (i === 0) scale = 2.0;
+        else if (i === 1) scale = 4.0;
+        else scale = 2.5 / i;
         rawCoeffs.push(randomBetween(-scale, scale));
       }
 
       let nonconstantSize = 0;
-      for (let i = 1; i < rawCoeffs.length; i++) {
-        nonconstantSize += Math.abs(rawCoeffs[i]);
-      }
+      for (let i = 1; i < rawCoeffs.length; i++) nonconstantSize += Math.abs(rawCoeffs[i]);
+      if (nonconstantSize < 0.8) rawCoeffs[1] += randomBetween(1.0, 2.0) * (Math.random() < 0.5 ? -1 : 1);
 
-      if (nonconstantSize < 0.8) {
-        rawCoeffs[1] += randomBetween(1.0, 2.0) * (Math.random() < 0.5 ? -1 : 1);
-      }
-
-      function uOfT(t) {
-        return -1 + 2 * ((t - tMin) / (tMax - tMin));
-      }
+      function uOfT(t) { return -1 + 2 * ((t - tMin) / (tMax - tMin)); }
 
       function xRaw(t) {
         const u = uOfT(t);
         let sum = 0;
-        for (let i = 0; i < rawCoeffs.length; i++) {
-          sum += rawCoeffs[i] * Math.pow(u, i);
-        }
+        for (let i = 0; i < rawCoeffs.length; i++) sum += rawCoeffs[i] * Math.pow(u, i);
         return sum;
       }
 
       function vRaw(t) {
         const u = uOfT(t);
         const duDt = 2 / (tMax - tMin);
-
         let dPdu = 0;
-        for (let i = 1; i < rawCoeffs.length; i++) {
-          dPdu += i * rawCoeffs[i] * Math.pow(u, i - 1);
-        }
-
+        for (let i = 1; i < rawCoeffs.length; i++) dPdu += i * rawCoeffs[i] * Math.pow(u, i - 1);
         return dPdu * duDt;
       }
 
@@ -508,38 +615,25 @@
       const mid = 0.5 * (sampled.minX + sampled.maxX);
       let range = sampled.maxX - sampled.minX;
       if (range < 0.001) range = 1;
-
-      const desiredRange = 8.0;
-      const scale = desiredRange / range;
+      const scale = 8.0 / range;
 
       return {
         name: "Random Polynomial",
         description: "A randomly generated position-time graph. Use the tangent line to decide when velocity is positive, negative, zero, large, or small.",
-        x: function(t) {
-          return scale * (xRaw(t) - mid);
-        },
-        v: function(t) {
-          return scale * vRaw(t);
-        }
+        x: t => scale * (xRaw(t) - mid),
+        v: t => scale * vRaw(t)
       };
     }
-
-    // ------------------------------------------------------------
-    // Sampling and fit-checking
-    // ------------------------------------------------------------
 
     function sampleGraph(xFunction, nSamples) {
       let minX = Infinity;
       let maxX = -Infinity;
-
       for (let i = 0; i <= nSamples; i++) {
         const t = tMin + (i / nSamples) * (tMax - tMin);
         const x = xFunction(t);
-
         if (x < minX) minX = x;
         if (x > maxX) maxX = x;
       }
-
       return { minX, maxX };
     }
 
@@ -547,58 +641,38 @@
       const sampled = sampleGraph(currentGraph.x, 500);
       let minVal = sampled.minX;
       let maxVal = sampled.maxX;
-
       if (Math.abs(maxVal - minVal) < 0.01) {
         minVal -= 1;
         maxVal += 1;
       }
-
       const padding = 0.18 * (maxVal - minVal);
       xMin = minVal - padding;
       xMax = maxVal + padding;
-
       if (xMin > 0) xMin = -0.5;
       if (xMax < 0) xMax = 0.5;
     }
-
-    // ------------------------------------------------------------
-    // Drawing
-    // ------------------------------------------------------------
 
     function draw() {
       ctx.clearRect(0, 0, W, H);
       drawBackground();
       drawAxes();
       drawCurve();
-
-      if (showTangent && selectedT !== null) {
-        drawTangent(selectedT);
-      }
-
+      if (showTangent && selectedT !== null) drawTangent(selectedT);
       drawGraphTitle();
     }
 
     function drawBackground() {
       ctx.fillStyle = "white";
       ctx.fillRect(0, 0, W, H);
-
       ctx.strokeStyle = "#dddddd";
       ctx.lineWidth = 1;
-
       for (let i = 0; i <= 10; i++) {
         const px = plot.left + (i / 10) * plotW;
-        ctx.beginPath();
-        ctx.moveTo(px, plot.top);
-        ctx.lineTo(px, plot.bottom);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(px, plot.top); ctx.lineTo(px, plot.bottom); ctx.stroke();
       }
-
       for (let i = 0; i <= 8; i++) {
         const py = plot.top + (i / 8) * plotH;
-        ctx.beginPath();
-        ctx.moveTo(plot.left, py);
-        ctx.lineTo(plot.right, py);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(plot.left, py); ctx.lineTo(plot.right, py); ctx.stroke();
       }
     }
 
@@ -611,17 +685,15 @@
         const zero = graphToScreen(0, 0);
         ctx.strokeStyle = "#555555";
         ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(plot.left, zero.py);
-        ctx.lineTo(plot.right, zero.py);
-        ctx.stroke();
+        ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(plot.left, zero.py); ctx.lineTo(plot.right, zero.py); ctx.stroke();
+        ctx.setLineDash([]);
       }
 
       ctx.fillStyle = "#222222";
       ctx.font = "16px Arial";
       ctx.textAlign = "center";
       ctx.fillText("time, t", plot.left + plotW / 2, H - 22);
-
       ctx.save();
       ctx.translate(25, plot.top + plotH / 2);
       ctx.rotate(-Math.PI / 2);
@@ -631,13 +703,11 @@
       ctx.font = "12px Arial";
       ctx.fillStyle = "#444444";
       ctx.textAlign = "center";
-
       for (let i = 0; i <= 5; i++) {
         const t = tMin + (i / 5) * (tMax - tMin);
         const p = graphToScreen(t, xMin);
         ctx.fillText(t.toFixed(0), p.px, plot.bottom + 18);
       }
-
       ctx.textAlign = "right";
       for (let i = 0; i <= 4; i++) {
         const x = xMin + (i / 4) * (xMax - xMin);
@@ -647,23 +717,17 @@
     }
 
     function drawCurve() {
-      ctx.strokeStyle = "#1f6fb2";
+      ctx.strokeStyle = "#125a9c";
       ctx.lineWidth = 3;
       ctx.beginPath();
-
       const n = 600;
       for (let i = 0; i <= n; i++) {
         const t = tMin + (i / n) * (tMax - tMin);
         const x = currentGraph.x(t);
         const p = graphToScreen(t, x);
-
-        if (i === 0) {
-          ctx.moveTo(p.px, p.py);
-        } else {
-          ctx.lineTo(p.px, p.py);
-        }
+        if (i === 0) ctx.moveTo(p.px, p.py);
+        else ctx.lineTo(p.px, p.py);
       }
-
       ctx.stroke();
     }
 
@@ -671,41 +735,32 @@
       const x0 = currentGraph.x(t0);
       const v0 = currentGraph.v(t0);
       const center = graphToScreen(t0, x0);
-
       const tangentDuration = 0.9;
       let t1 = clamp(t0 - tangentDuration / 2, tMin, tMax);
       let t2 = clamp(t0 + tangentDuration / 2, tMin, tMax);
-
       if (t2 - t1 < tangentDuration) {
-        if (t1 === tMin) {
-          t2 = clamp(t1 + tangentDuration, tMin, tMax);
-        } else if (t2 === tMax) {
-          t1 = clamp(t2 - tangentDuration, tMin, tMax);
-        }
+        if (t1 === tMin) t2 = clamp(t1 + tangentDuration, tMin, tMax);
+        else if (t2 === tMax) t1 = clamp(t2 - tangentDuration, tMin, tMax);
       }
-
       const x1 = x0 + v0 * (t1 - t0);
       const x2 = x0 + v0 * (t2 - t0);
       const p1 = graphToScreen(t1, x1);
       const p2 = graphToScreen(t2, x2);
 
-      ctx.strokeStyle = "#d35400";
+      ctx.strokeStyle = "#a84600";
       ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(p1.px, p1.py);
-      ctx.lineTo(p2.px, p2.py);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(p1.px, p1.py); ctx.lineTo(p2.px, p2.py); ctx.stroke();
 
-      ctx.fillStyle = "#d35400";
-      ctx.beginPath();
-      ctx.arc(center.px, center.py, 6, 0, 2 * Math.PI);
-      ctx.fill();
+      ctx.fillStyle = "#a84600";
+      ctx.beginPath(); ctx.arc(center.px, center.py, 7, 0, 2 * Math.PI); ctx.fill();
+      ctx.strokeStyle = "#222222";
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(center.px, center.py, 11, 0, 2 * Math.PI); ctx.stroke();
 
       ctx.fillStyle = "#222222";
       ctx.font = "14px Arial";
       ctx.textAlign = "left";
-
-      const labelX = clamp(center.px + 10, plot.left + 5, plot.right - 130);
+      const labelX = clamp(center.px + 10, plot.left + 5, plot.right - 150);
       const labelY = clamp(center.py - 12, plot.top + 18, plot.bottom - 10);
       ctx.fillText("slope = velocity", labelX, labelY);
     }
@@ -717,67 +772,131 @@
       ctx.fillText(currentGraph.name, plot.left, 22);
     }
 
-    // ------------------------------------------------------------
-    // Readout
-    // ------------------------------------------------------------
+    function makeConceptText(x, v) {
+      const eps = 0.08;
+      let positionText;
+      if (x > eps) positionText = "The position is positive because the point is above x = 0.";
+      else if (x < -eps) positionText = "The position is negative because the point is below x = 0.";
+      else positionText = "The position is approximately zero because the point is near x = 0.";
 
-    function updateReadout() {
-      if (!showTangent || selectedT === null) {
-        timeReadout.textContent = "--";
-        positionReadout.textContent = "--";
-        velocityReadout.textContent = "--";
-        conceptBox.textContent = currentGraph.description;
-        return;
-      }
+      let velocityText;
+      if (v > eps) velocityText = "The velocity is positive because the graph slopes upward.";
+      else if (v < -eps) velocityText = "The velocity is negative because the graph slopes downward.";
+      else velocityText = "The velocity is approximately zero because the graph is nearly horizontal here.";
 
+      let speedText;
+      const speed = Math.abs(v);
+      if (speed < 0.15) speedText = "The speed is small because the slope is close to zero.";
+      else if (speed < 0.75) speedText = "The speed is moderate because the slope is noticeable but not very steep.";
+      else speedText = "The speed is large because the graph is steep here.";
+
+      return positionText + " " + velocityText + " " + speedText;
+    }
+
+    function getDirection(v) {
+      const eps = 0.08;
+      if (v > eps) return "moving in the positive direction";
+      if (v < -eps) return "moving in the negative direction";
+      return "momentarily stopped or nearly stopped";
+    }
+
+    function updateReadout(announce) {
+      if (selectedT === null) selectedT = 0;
       const t = selectedT;
       const x = currentGraph.x(t);
       const v = currentGraph.v(t);
+      const direction = getDirection(v);
 
-      timeReadout.textContent = formatNumber(t);
-      positionReadout.textContent = formatNumber(x);
-      velocityReadout.textContent = formatNumber(v);
-      conceptBox.innerHTML = makeConceptText(x, v);
+      timeReadout.textContent = formatNumber(t) + " s";
+      positionReadout.textContent = formatNumber(x) + " m";
+      velocityReadout.textContent = formatNumber(v) + " m/s";
+      directionReadout.textContent = direction;
+      timeSlider.value = formatNumber(t);
+      timeSliderValue.textContent = formatNumber(t) + " s";
+      conceptBox.textContent = makeConceptText(x, v);
+
+      const canvasLabel = currentGraph.name + ". Selected time " + formatNumber(t) + " seconds. Position " + formatNumber(x) + " meters. Velocity " + formatNumber(v) + " meters per second, " + direction + ".";
+      canvas.setAttribute("aria-label", canvasLabel);
+
+      if (announce) liveStatus.textContent = canvasLabel;
     }
 
-    function makeConceptText(x, v) {
+    function summarizeGraph() {
+      const samples = [];
+      for (let i = 0; i <= 20; i++) {
+        const t = tMin + (i / 20) * (tMax - tMin);
+        samples.push({ t, x: currentGraph.x(t), v: currentGraph.v(t) });
+      }
+      let min = samples[0];
+      let max = samples[0];
+      samples.forEach(s => {
+        if (s.x < min.x) min = s;
+        if (s.x > max.x) max = s;
+      });
+
+      const start = samples[0];
+      const end = samples[samples.length - 1];
+      const intervals = [];
+      let currentSign = velocitySign(samples[0].v);
+      let startT = samples[0].t;
+      for (let i = 1; i < samples.length; i++) {
+        const sign = velocitySign(samples[i].v);
+        if (sign !== currentSign) {
+          intervals.push({ startT, endT: samples[i - 1].t, sign: currentSign });
+          startT = samples[i - 1].t;
+          currentSign = sign;
+        }
+      }
+      intervals.push({ startT, endT: end.t, sign: currentSign });
+
+      const intervalText = intervals.map(interval => {
+        let phrase = "nearly horizontal";
+        if (interval.sign === "positive") phrase = "sloping upward, so velocity is positive";
+        if (interval.sign === "negative") phrase = "sloping downward, so velocity is negative";
+        return "from about t = " + formatNumber(interval.startT) + " s to t = " + formatNumber(interval.endT) + " s the graph is " + phrase;
+      }).join("; ");
+
+      graphSummaryText.textContent = currentGraph.description + " The graph starts at x = " + formatNumber(start.x) + " m and ends at x = " + formatNumber(end.x) + " m. The lowest sampled position is about x = " + formatNumber(min.x) + " m near t = " + formatNumber(min.t) + " s. The highest sampled position is about x = " + formatNumber(max.x) + " m near t = " + formatNumber(max.t) + " s. Based on sampled values, " + intervalText + ".";
+    }
+
+    function velocitySign(v) {
       const eps = 0.08;
-
-      let positionText;
-      if (x > eps) {
-        positionText = "The position is positive because the point is above x = 0.";
-      } else if (x < -eps) {
-        positionText = "The position is negative because the point is below x = 0.";
-      } else {
-        positionText = "The position is approximately zero because the point is near x = 0.";
-      }
-
-      let velocityText;
-      if (v > eps) {
-        velocityText = "The velocity is positive because the graph slopes upward.";
-      } else if (v < -eps) {
-        velocityText = "The velocity is negative because the graph slopes downward.";
-      } else {
-        velocityText = "The velocity is approximately zero because the graph is nearly horizontal here.";
-      }
-
-      return positionText + "<br><br>" + velocityText;
+      if (v > eps) return "positive";
+      if (v < -eps) return "negative";
+      return "zero";
     }
 
-    // ------------------------------------------------------------
-    // Mouse interaction
-    // ------------------------------------------------------------
+    function updateDataTable() {
+      let html = "<table><caption class='sr-only'>Sampled position and velocity values for the current graph</caption>";
+      html += "<thead><tr><th scope='col'>Time t (s)</th><th scope='col'>Position x (m)</th><th scope='col'>Velocity v (m/s)</th><th scope='col'>Motion</th></tr></thead><tbody>";
+      for (let i = 0; i <= 20; i++) {
+        const t = tMin + (i / 20) * (tMax - tMin);
+        const x = currentGraph.x(t);
+        const v = currentGraph.v(t);
+        html += "<tr><td>" + formatNumber(t) + "</td><td>" + formatNumber(x) + "</td><td>" + formatNumber(v) + "</td><td>" + getDirection(v) + "</td></tr>";
+      }
+      html += "</tbody></table>";
+      dataTableContainer.innerHTML = html;
+    }
+
+    function setSelectedTime(t, announce) {
+      stopAnimation();
+      selectedT = clamp(t, tMin, tMax);
+      playT = selectedT;
+      showTangent = true;
+      updateReadout(announce);
+      draw();
+    }
+
+    function stepTime(delta, announce) {
+      setSelectedTime((selectedT === null ? 0 : selectedT) + delta, announce);
+    }
 
     function getCanvasPoint(event) {
       const rect = canvas.getBoundingClientRect();
-
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
-
-      return {
-        px: (event.clientX - rect.left) * scaleX,
-        py: (event.clientY - rect.top) * scaleY
-      };
+      return { px: (event.clientX - rect.left) * scaleX, py: (event.clientY - rect.top) * scaleY };
     }
 
     function isInsidePlot(px, py) {
@@ -789,98 +908,63 @@
       const t = clamp(g.t, tMin, tMax);
       const x = currentGraph.x(t);
       const p = graphToScreen(t, x);
-
       const dx = px - p.px;
       const dy = py - p.py;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      return {
-        t: t,
-        x: x,
-        px: p.px,
-        py: p.py,
-        distance: distance
-      };
+      return { t, x, px: p.px, py: p.py, distance: Math.sqrt(dx * dx + dy * dy) };
     }
 
-    function placeTangentFromEvent(event, allowHide) {
+    function placeTangentFromEvent(event) {
       const p = getCanvasPoint(event);
-
-      if (!isInsidePlot(p.px, p.py)) {
-        if (allowHide) hideTangent();
-        return;
-      }
-
+      if (!isInsidePlot(p.px, p.py)) return;
       const nearest = nearestCurveInfo(p.px, p.py);
-      const snapDistancePixels = 32;
-
-      if (nearest.distance <= snapDistancePixels) {
-        selectedT = nearest.t;
-        playT = selectedT;
-        showTangent = true;
-        updateReadout();
-        draw();
-      } else if (allowHide) {
-        hideTangent();
-      }
+      const snapDistancePixels = 36;
+      if (nearest.distance <= snapDistancePixels) setSelectedTime(nearest.t, false);
     }
 
-    function hideTangent() {
-      showTangent = false;
-      selectedT = null;
-      updateReadout();
-      draw();
-    }
-
-    canvas.addEventListener("mousedown", function(event) {
-      stopAnimation();
+    canvas.addEventListener("mousedown", event => {
       isDragging = true;
-      placeTangentFromEvent(event, true);
+      placeTangentFromEvent(event);
     });
 
-    window.addEventListener("mousemove", function(event) {
+    window.addEventListener("mousemove", event => {
       if (!isDragging) return;
-      placeTangentFromEvent(event, false);
+      placeTangentFromEvent(event);
     });
 
-    window.addEventListener("mouseup", function() {
-      isDragging = false;
-    });
+    window.addEventListener("mouseup", () => { isDragging = false; });
 
-    canvas.addEventListener("touchstart", function(event) {
+    canvas.addEventListener("touchstart", event => {
       event.preventDefault();
-      stopAnimation();
       isDragging = true;
-      placeTangentFromEvent(event.touches[0], true);
+      placeTangentFromEvent(event.touches[0]);
     }, { passive: false });
 
-    canvas.addEventListener("touchmove", function(event) {
+    canvas.addEventListener("touchmove", event => {
       event.preventDefault();
       if (!isDragging) return;
-      placeTangentFromEvent(event.touches[0], false);
+      placeTangentFromEvent(event.touches[0]);
     }, { passive: false });
 
-    canvas.addEventListener("touchend", function() {
-      isDragging = false;
-    });
+    canvas.addEventListener("touchend", () => { isDragging = false; });
 
-    // ------------------------------------------------------------
-    // Animation
-    // ------------------------------------------------------------
+    canvas.addEventListener("keydown", event => {
+      let handled = true;
+      if (event.key === "ArrowLeft") stepTime(event.shiftKey ? -0.5 : -0.1, true);
+      else if (event.key === "ArrowRight") stepTime(event.shiftKey ? 0.5 : 0.1, true);
+      else if (event.key === "Home") setSelectedTime(tMin, true);
+      else if (event.key === "End") setSelectedTime(tMax, true);
+      else handled = false;
+      if (handled) event.preventDefault();
+    });
 
     function startAnimation() {
       if (isPlaying) return;
-
+      if (prefersReducedMotion.matches) {
+        liveStatus.textContent = "Animation started. Motion reduction is enabled in your system settings, so consider using the step buttons or time slider instead.";
+      }
       isPlaying = true;
       showTangent = true;
-
-      if (selectedT === null) {
-        selectedT = tMin;
-        playT = tMin;
-      } else {
-        playT = selectedT;
-      }
-
+      playT = selectedT === null ? tMin : selectedT;
       lastTimestamp = null;
       requestAnimationFrame(animationStep);
     }
@@ -892,40 +976,26 @@
 
     function animationStep(timestamp) {
       if (!isPlaying) return;
-
-      if (lastTimestamp === null) {
-        lastTimestamp = timestamp;
-      }
-
+      if (lastTimestamp === null) lastTimestamp = timestamp;
       const elapsedSeconds = (timestamp - lastTimestamp) / 1000;
       lastTimestamp = timestamp;
-
       playT += playSpeed * elapsedSeconds;
-
-      if (playT > tMax) {
-        playT = tMin;
-      }
-
+      if (playT > tMax) playT = tMin;
       selectedT = playT;
       showTangent = true;
-
-      updateReadout();
+      updateReadout(false);
       draw();
-
       requestAnimationFrame(animationStep);
     }
 
-    // ------------------------------------------------------------
-    // Buttons
-    // ------------------------------------------------------------
-
     function setActiveButton(button) {
-      graphButtons.forEach(function(btn) {
+      graphButtons.forEach(btn => {
         btn.classList.remove("active");
+        btn.setAttribute("aria-pressed", "false");
       });
-
       if (button) {
         button.classList.add("active");
+        button.setAttribute("aria-pressed", "true");
       }
     }
 
@@ -933,45 +1003,34 @@
       stopAnimation();
       currentGraph = graph;
       updateVerticalRange();
-      selectedT = null;
-      showTangent = false;
+      selectedT = tMin;
+      showTangent = true;
       playT = tMin;
       setActiveButton(button);
       showCustomPanel(button === customBtn);
       updateEquationPreview();
-      updateReadout();
+      updateReadout(true);
+      summarizeGraph();
+      updateDataTable();
       draw();
+      liveStatus.textContent = currentGraph.name + " selected. " + currentGraph.description;
     }
 
-    preset1Btn.addEventListener("click", function() {
-      setGraph(getPreset1(), preset1Btn);
-    });
+    function refreshCustomGraph() {
+      updateEquationPreview();
+      if (currentGraph && currentGraph.name === "Custom Cubic") setGraph(getCustomGraph(), customBtn);
+    }
 
-    preset2Btn.addEventListener("click", function() {
-      setGraph(getPreset2(), preset2Btn);
-    });
+    preset1Btn.addEventListener("click", () => setGraph(getPreset1(), preset1Btn));
+    preset2Btn.addEventListener("click", () => setGraph(getPreset2(), preset2Btn));
+    preset3Btn.addEventListener("click", () => setGraph(getPreset3(), preset3Btn));
+    preset4Btn.addEventListener("click", () => setGraph(getPreset4(), preset4Btn));
+    randomBtn.addEventListener("click", () => setGraph(generateRandomGraph(), randomBtn));
+    customBtn.addEventListener("click", () => setGraph(getCustomGraph(), customBtn));
 
-    preset3Btn.addEventListener("click", function() {
-      setGraph(getPreset3(), preset3Btn);
-    });
+    [a0Input, a1Input, a2Input, a3Input].forEach(input => input.addEventListener("input", refreshCustomGraph));
 
-    preset4Btn.addEventListener("click", function() {
-      setGraph(getPreset4(), preset4Btn);
-    });
-
-    randomBtn.addEventListener("click", function() {
-      setGraph(generateRandomGraph(), randomBtn);
-    });
-
-    customBtn.addEventListener("click", function() {
-      setGraph(getCustomGraph(), customBtn);
-    });
-
-    [a0Input, a1Input, a2Input, a3Input].forEach(function(input) {
-      input.addEventListener("input", refreshCustomGraph);
-    });
-
-    zeroCustomBtn.addEventListener("click", function() {
+    zeroCustomBtn.addEventListener("click", () => {
       a0Input.value = 0;
       a1Input.value = 0;
       a2Input.value = 0;
@@ -979,26 +1038,17 @@
       refreshCustomGraph();
     });
 
-    playBtn.addEventListener("click", function() {
-      startAnimation();
-    });
-
-    stopBtn.addEventListener("click", function() {
+    playBtn.addEventListener("click", startAnimation);
+    stopBtn.addEventListener("click", () => {
       stopAnimation();
+      liveStatus.textContent = "Animation stopped.";
     });
+    resetBtn.addEventListener("click", () => setSelectedTime(tMin, true));
+    stepBackBtn.addEventListener("click", () => stepTime(-0.25, true));
+    stepForwardBtn.addEventListener("click", () => stepTime(0.25, true));
 
-    resetBtn.addEventListener("click", function() {
-      stopAnimation();
-      selectedT = null;
-      showTangent = false;
-      playT = tMin;
-      updateReadout();
-      draw();
-    });
-
-    // ------------------------------------------------------------
-    // Initialize
-    // ------------------------------------------------------------
+    timeSlider.addEventListener("input", () => setSelectedTime(parseFloat(timeSlider.value), false));
+    timeSlider.addEventListener("change", () => updateReadout(true));
 
     setGraph(getPreset1(), preset1Btn);
   </script>
