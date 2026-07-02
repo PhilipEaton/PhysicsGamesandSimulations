@@ -842,8 +842,8 @@ function drawSelectedMarkers(state) {
       }
 
       const markerCenter = {
-        x: bulb.rect.x + bulb.rect.w / 2,
-        y: bulb.rect.y - 16
+        x: bulb.rect.x + bulb.rect.w *1.1,
+        y: bulb.rect.y - bulb.rect.h *0.4
       };
 
       drawCircle(markerCenter.x, markerCenter.y, 13, BLUE);
