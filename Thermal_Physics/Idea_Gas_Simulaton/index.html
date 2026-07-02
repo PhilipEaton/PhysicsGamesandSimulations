@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ideal Gas Simulation: Internal Energy vs Time</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #d8d8d8;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    canvas {
+      background: #e1e1e1;
+      border: 1px solid #333;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gasCanvas" width="1100" height="700"></canvas>
+
+  <script>
+    // ============================================================
+    // Ideal Gas Simulation with Internal Energy Plot
+    // ============================================================
+    //
+    // Controls:
+    //   Click scenario buttons - choose starting situation
+    //   Drag particle slider - change particle count
+    //   1 - Random gas
+    //   2 - Cold cluster
+    //   3 - Two-stream collision
+    //   4 - Hot spot
+    //   5 - Ring explosion
+    //   SPACE - pause / unpause
+    //   R - reset current scenario
+    //   ESC - stop animation
+    // ============================================================
+
+    const canvas = document.getElementById("gasCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // ------------------------------------------------------------
+    // Window / layout
+    // ------------------------------------------------------------
+
+    const WIDTH = 1100;
+    const HEIGHT = 700;
+    const FPS = 60;
+
+    const SIM_X = 30;
+    const SIM_Y = 60;
+    const SIM_W = 680;
+    const SIM_H = 590;
+
+    const PLOT_X = 750;
+    const PLOT_Y = 250;
+    const PLOT_W = 310;
+    const PLOT_H = 130;
+
+    // ------------------------------------------------------------
+    // Colors
+    // ------------------------------------------------------------
+
+    const WHITE = "rgb(245, 245, 245)";
+    const BLACK = "rgb(20, 20, 20)";
+    const DARK_GRAY = "rgb(90, 90, 90)";
+    const LIGHT_GRAY = "rgb(225, 225, 225)";
+    const BLUE = "rgb(70, 130, 230)";
+
+    const BUTTON_COLOR = "rgb(235, 235, 235)";
+    const BUTTON_HOVER = "rgb(220, 220, 220)";
+    const BUTTON_ACTIVE = "rgb(190, 220, 255)";
+
+    const SLIDER_TRACK = "rgb(170, 170, 170)";
+    const SLIDER_KNOB = "rgb(80, 130, 220)";
+
+    // ------------------------------------------------------------
+    // Physics settings
+    // ------------------------------------------------------------
+
+    const PARTICLE_RADIUS = 5;
+    const PARTICLE_MASS = 1.0;
+
+    const MIN_PARTICLES = 10;
+    const MAX_PARTICLES = 400;
+    let numParticles = 80;
+
+    const TARGET_TOTAL_ENERGY = 120000.0;
+    const SUBSTEPS = 3;
+    const ENERGY_HISTORY_LENGTH = 500;
+
+    // ------------------------------------------------------------
+    // Small vector helper
+    // ------------------------------------------------------------
+
+    class Vec2 {
+      constructor(x = 0, y = 0) {
+        this.x = x;
+        this.y = y;
+      }
+
+      copy() {
+        return new Vec2(this.x, this.y);
+      }
+
+      add(v) {
+        this.x += v.x;
+        this.y += v.y;
+        return this;
+      }
+
+      sub(v) {
+        this.x -= v.x;
+        this.y -= v.y;
+        return this;
+      }
+
+      mul(s) {
+        this.x *= s;
+        this.y *= s;
+        return this;
+      }
+
+      lengthSquared() {
+        return this.x * this.x + this.y * this.y;
+      }
+
+      length() {
+        return Math.sqrt(this.lengthSquared());
+      }
+
+      dot(v) {
+        return this.x * v.x + this.y * v.y;
+      }
+
+      static add(a, b) {
+        return new Vec2(a.x + b.x, a.y + b.y);
+      }
+
+      static sub(a, b) {
+        return new Vec2(a.x - b.x, a.y - b.y);
+      }
+
+      static mul(v, s) {
+        return new Vec2(v.x * s, v.y * s);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // General helpers
+    // ------------------------------------------------------------
+
+    function rand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function clamp(value, minValue, maxValue) {
+      return Math.max(minValue, Math.min(maxValue, value));
+    }
+
+    function lerp(a, b, t) {
+      return Math.round(a + (b - a) * t);
+    }
+
+    function lerpColor(c1, c2, t) {
+      return [
+        lerp(c1[0], c2[0], t),
+        lerp(c1[1], c2[1], t),
+        lerp(c1[2], c2[2], t),
+      ];
+    }
+
+    function rgb(colorArray) {
+      return `rgb(${colorArray[0]}, ${colorArray[1]}, ${colorArray[2]})`;
+    }
+
+    function speedToColor(speed) {
+      // The value here is in simulation-speed units.
+      // Increase this if everything looks too red.
+      // Decrease it if everything looks too blue.
+      const MAX_COLOR_SPEED = 100;
+      const t = clamp(speed / MAX_COLOR_SPEED, 0, 1);
+
+      const colorStops = [
+        [0.00, [60, 120, 240]],
+        [0.25, [70, 200, 220]],
+        [0.50, [80, 190, 100]],
+        [0.70, [245, 220, 80]],
+        [0.88, [240, 120, 50]],
+        [1.00, [210, 60, 80]],
+      ];
+
+      for (let i = 0; i < colorStops.length - 1; i++) {
+        const [t0, c0] = colorStops[i];
+        const [t1, c1] = colorStops[i + 1];
+
+        if (t >= t0 && t <= t1) {
+          const localT = (t - t0) / (t1 - t0);
+          return rgb(lerpColor(c0, c1, localT));
+        }
+      }
+
+      return rgb(colorStops[colorStops.length - 1][1]);
+    }
+
+    function getMousePos(event) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY,
+      };
+    }
+
+    function drawText(text, x, y, color = BLACK, small = false) {
+      ctx.fillStyle = color;
+      ctx.font = small ? "19px Arial" : "24px Arial";
+      ctx.textBaseline = "top";
+      ctx.fillText(text, x, y);
+    }
+
+    function drawCenteredText(text, x, y, color = BLACK, small = true) {
+      ctx.fillStyle = color;
+      ctx.font = small ? "19px Arial" : "24px Arial";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, x, y);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+    }
+
+    function roundRect(x, y, w, h, radius, fillColor, strokeColor = null, lineWidth = 1) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+
+      if (fillColor) {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+      }
+
+      if (strokeColor) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+    }
+
+    // ------------------------------------------------------------
+    // UI classes
+    // ------------------------------------------------------------
+
+    class Button {
+      constructor(x, y, w, h, text, value) {
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.h = h;
+        this.text = text;
+        this.value = value;
+      }
+
+      contains(mouse) {
+        return mouse.x >= this.x && mouse.x <= this.x + this.w && mouse.y >= this.y && mouse.y <= this.y + this.h;
+      }
+
+      draw(active = false) {
+        const hovered = this.contains(mousePos);
+        let color = BUTTON_COLOR;
+
+        if (active) {
+          color = BUTTON_ACTIVE;
+        } else if (hovered) {
+          color = BUTTON_HOVER;
+        }
+
+        roundRect(this.x, this.y, this.w, this.h, 8, color, BLACK, 2);
+        drawCenteredText(this.text, this.x + this.w / 2, this.y + this.h / 2, BLACK, true);
+      }
+    }
+
+    class Slider {
+      constructor(x, y, w, minValue, maxValue, startValue, step = 1) {
+        this.x = x;
+        this.y = y;
+        this.w = w;
+        this.minValue = minValue;
+        this.maxValue = maxValue;
+        this.value = startValue;
+        this.step = step;
+        this.knobRadius = 9;
+        this.dragging = false;
+      }
+
+      valueToX() {
+        const fraction = (this.value - this.minValue) / (this.maxValue - this.minValue);
+        return this.x + fraction * this.w;
+      }
+
+      xToValue(mouseX) {
+        let fraction = (mouseX - this.x) / this.w;
+        fraction = clamp(fraction, 0, 1);
+
+        const rawValue = this.minValue + fraction * (this.maxValue - this.minValue);
+        const steppedValue = Math.round(rawValue / this.step) * this.step;
+
+        return Math.round(clamp(steppedValue, this.minValue, this.maxValue));
+      }
+
+      mouseDown(mouse) {
+        const knobX = this.valueToX();
+        const dx = mouse.x - knobX;
+        const dy = mouse.y - this.y;
+        const knobClicked = Math.sqrt(dx * dx + dy * dy) <= this.knobRadius + 4;
+        const trackClicked = Math.abs(mouse.y - this.y) <= 10 && mouse.x >= this.x && mouse.x <= this.x + this.w;
+
+        if (knobClicked || trackClicked) {
+          this.dragging = true;
+          this.value = this.xToValue(mouse.x);
+          return true;
+        }
+
+        return false;
+      }
+
+      mouseMove(mouse) {
+        if (this.dragging) {
+          this.value = this.xToValue(mouse.x);
+        }
+      }
+
+      mouseUp(mouse) {
+        if (this.dragging) {
+          this.dragging = false;
+          this.value = this.xToValue(mouse.x);
+          return true;
+        }
+
+        return false;
+      }
+
+      draw() {
+        ctx.strokeStyle = SLIDER_TRACK;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x + this.w, this.y);
+        ctx.stroke();
+
+        ctx.fillStyle = SLIDER_TRACK;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(this.x + this.w, this.y, 4, 0, 2 * Math.PI);
+        ctx.fill();
+
+        const knobX = this.valueToX();
+        ctx.fillStyle = SLIDER_KNOB;
+        ctx.beginPath();
+        ctx.arc(knobX, this.y, this.knobRadius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.strokeStyle = BLACK;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        drawText(`Particles: ${this.value}`, this.x, this.y - 32, BLACK, true);
+        drawText(String(this.minValue), this.x - 5, this.y + 12, DARK_GRAY, true);
+        drawText(String(this.maxValue), this.x + this.w - 35, this.y + 12, DARK_GRAY, true);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // Particle class
+    // ------------------------------------------------------------
+
+    class Particle {
+      constructor(pos, vel, radius = PARTICLE_RADIUS, mass = PARTICLE_MASS) {
+        this.pos = pos;
+        this.vel = vel;
+        this.radius = radius;
+        this.mass = mass;
+      }
+
+      kineticEnergy() {
+        return 0.5 * this.mass * this.vel.lengthSquared();
+      }
+
+      updatePosition(dt) {
+        this.pos.add(Vec2.mul(this.vel, dt));
+      }
+
+      handleWallCollisions() {
+        const left = SIM_X + this.radius;
+        const right = SIM_X + SIM_W - this.radius;
+        const top = SIM_Y + this.radius;
+        const bottom = SIM_Y + SIM_H - this.radius;
+
+        if (this.pos.x < left) {
+          this.pos.x = left;
+          this.vel.x *= -1;
+        } else if (this.pos.x > right) {
+          this.pos.x = right;
+          this.vel.x *= -1;
+        }
+
+        if (this.pos.y < top) {
+          this.pos.y = top;
+          this.vel.y *= -1;
+        } else if (this.pos.y > bottom) {
+          this.pos.y = bottom;
+          this.vel.y *= -1;
+        }
+      }
+
+      draw() {
+        const speed = this.vel.length();
+        const color = speedToColor(speed);
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.strokeStyle = BLACK;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    // ------------------------------------------------------------
+    // Physics utility functions
+    // ------------------------------------------------------------
+
+    function totalInternalEnergy(particles) {
+      return particles.reduce((sum, p) => sum + p.kineticEnergy(), 0);
+    }
+
+    function rescaleToTargetEnergy(particles, targetEnergy) {
+      const currentEnergy = totalInternalEnergy(particles);
+
+      if (currentEnergy <= 0) return;
+
+      const scale = Math.sqrt(targetEnergy / currentEnergy);
+
+      for (const p of particles) {
+        p.vel.mul(scale);
+      }
+    }
+
+    function randomPosition(radius = PARTICLE_RADIUS) {
+      const x = rand(SIM_X + radius, SIM_X + SIM_W - radius);
+      const y = rand(SIM_Y + radius, SIM_Y + SIM_H - radius);
+      return new Vec2(x, y);
+    }
+
+    function randomVelocity(speedMin = 60, speedMax = 260) {
+      const angle = rand(0, 2 * Math.PI);
+      const speed = rand(speedMin, speedMax);
+      return new Vec2(Math.cos(angle) * speed, Math.sin(angle) * speed);
+    }
+
+    function createParticles(scenarioName, n) {
+      const newParticles = [];
+
+      if (scenarioName === "random") {
+        for (let i = 0; i < n; i++) {
+          newParticles.push(new Particle(randomPosition(), randomVelocity(60, 260)));
+        }
+      } else if (scenarioName === "cold_cluster") {
+        const center = new Vec2(SIM_X + SIM_W / 2, SIM_Y + SIM_H / 2);
+
+        for (let i = 0; i < n; i++) {
+          const offset = new Vec2(rand(-75, 75), rand(-75, 75));
+          const pos = Vec2.add(center, offset);
+          newParticles.push(new Particle(pos, randomVelocity(20, 100)));
+        }
+      } else if (scenarioName === "two_stream") {
+        for (let i = 0; i < n; i++) {
+          let x;
+          let vx;
+
+          if (i < Math.floor(n / 2)) {
+            x = rand(SIM_X + 40, SIM_X + SIM_W * 0.35);
+            vx = rand(160, 260);
+          } else {
+            x = rand(SIM_X + SIM_W * 0.65, SIM_X + SIM_W - 40);
+            vx = rand(-260, -160);
+          }
+
+          const y = rand(SIM_Y + 40, SIM_Y + SIM_H - 40);
+          const vy = rand(-50, 50);
+          newParticles.push(new Particle(new Vec2(x, y), new Vec2(vx, vy)));
+        }
+      } else if (scenarioName === "hot_spot") {
+        const center = new Vec2(SIM_X + SIM_W / 2, SIM_Y + SIM_H / 2);
+
+        for (let i = 0; i < n; i++) {
+          const pos = randomPosition();
+          const distanceFromCenter = Vec2.sub(pos, center).length();
+          const vel = distanceFromCenter < 130 ? randomVelocity(250, 450) : randomVelocity(20, 90);
+          newParticles.push(new Particle(pos, vel));
+        }
+      } else if (scenarioName === "ring_explosion") {
+        const center = new Vec2(SIM_X + SIM_W / 2, SIM_Y + SIM_H / 2);
+
+        for (let i = 0; i < n; i++) {
+          const angle = rand(0, 2 * Math.PI);
+          const radius = rand(20, 55);
+          const direction = new Vec2(Math.cos(angle), Math.sin(angle));
+          const pos = Vec2.add(center, Vec2.mul(direction, radius));
+          const speed = rand(120, 280);
+          const vel = Vec2.mul(direction, speed);
+          vel.add(new Vec2(rand(-30, 30), rand(-30, 30)));
+          newParticles.push(new Particle(pos, vel));
+        }
+      }
+
+      rescaleToTargetEnergy(newParticles, TARGET_TOTAL_ENERGY);
+
+      // Resolve initial overlaps.
+      for (let i = 0; i < 10; i++) {
+        resolveAllParticleCollisions(newParticles);
+      }
+
+      return newParticles;
+    }
+
+    function resolveParticleCollision(p1, p2) {
+      let delta = Vec2.sub(p2.pos, p1.pos);
+      let distSq = delta.lengthSquared();
+      const minDist = p1.radius + p2.radius;
+
+      if (distSq === 0) {
+        delta = new Vec2(rand(-1, 1), rand(-1, 1));
+        distSq = delta.lengthSquared();
+      }
+
+      const dist = Math.sqrt(distSq);
+
+      if (dist >= minDist) return;
+
+      const normal = Vec2.mul(delta, 1 / dist);
+
+      // Positional correction to prevent sticking.
+      const overlap = minDist - dist;
+      const correction = Vec2.mul(normal, overlap / 2);
+      p1.pos.sub(correction);
+      p2.pos.add(correction);
+
+      const relativeVelocity = Vec2.sub(p2.vel, p1.vel);
+      const velocityAlongNormal = relativeVelocity.dot(normal);
+
+      // If already separating, do not apply impulse.
+      if (velocityAlongNormal > 0) return;
+
+      const restitution = 1.0;
+      let impulseMagnitude = -(1 + restitution) * velocityAlongNormal;
+      impulseMagnitude /= (1 / p1.mass + 1 / p2.mass);
+
+      const impulse = Vec2.mul(normal, impulseMagnitude);
+      p1.vel.sub(Vec2.mul(impulse, 1 / p1.mass));
+      p2.vel.add(Vec2.mul(impulse, 1 / p2.mass));
+    }
+
+    function resolveAllParticleCollisions(particles) {
+      const n = particles.length;
+
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          resolveParticleCollision(particles[i], particles[j]);
+        }
+      }
+    }
+
+    function updateSimulation(dt) {
+      const subDt = dt / SUBSTEPS;
+
+      for (let s = 0; s < SUBSTEPS; s++) {
+        for (const p of particles) {
+          p.updatePosition(subDt);
+          p.handleWallCollisions();
+        }
+
+        resolveAllParticleCollisions(particles);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // Drawing functions
+    // ------------------------------------------------------------
+
+    function drawSimulationBox() {
+      ctx.fillStyle = WHITE;
+      ctx.fillRect(SIM_X, SIM_Y, SIM_W, SIM_H);
+
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(SIM_X, SIM_Y, SIM_W, SIM_H);
+    }
+
+    function drawEnergyPlot() {
+      ctx.fillStyle = WHITE;
+      ctx.fillRect(PLOT_X, PLOT_Y, PLOT_W, PLOT_H);
+
+      ctx.strokeStyle = BLACK;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(PLOT_X, PLOT_Y, PLOT_W, PLOT_H);
+
+      drawText("Internal Energy vs Time", PLOT_X, PLOT_Y - 30);
+
+      if (energyHistory.length < 2) return;
+
+      const values = energyHistory;
+      let eMin = Math.min(...values);
+      let eMax = Math.max(...values);
+
+      if (Math.abs(eMax - eMin) < 1e-9) {
+        eMin *= 0.98;
+        eMax *= 1.02;
+      }
+
+      const padding = 15;
+
+      ctx.strokeStyle = BLUE;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+
+      for (let i = 0; i < values.length; i++) {
+        const e = values[i];
+        const x = PLOT_X + padding + i * (PLOT_W - 2 * padding) / (ENERGY_HISTORY_LENGTH - 1);
+        const y = PLOT_Y + PLOT_H - padding - (e - eMin) / (eMax - eMin) * (PLOT_H - 2 * padding);
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+
+      ctx.stroke();
+
+      drawText(eMax.toLocaleString(undefined, { maximumFractionDigits: 0 }), PLOT_X + 5, PLOT_Y + 5, DARK_GRAY, true);
+      drawText(eMin.toLocaleString(undefined, { maximumFractionDigits: 0 }), PLOT_X + 5, PLOT_Y + PLOT_H - 20, DARK_GRAY, true);
+      drawText("time", PLOT_X + PLOT_W - 45, PLOT_Y + PLOT_H + 8, DARK_GRAY, true);
+      drawText("U", PLOT_X - 18, PLOT_Y + 5, DARK_GRAY, true);
+    }
+
+    function scenarioDisplayName(scenarioName) {
+      const names = {
+        random: "random",
+        cold_cluster: "cold_cluster",
+        two_stream: "two_stream",
+        hot_spot: "hot_spot",
+        ring_explosion: "ring_explosion",
+      };
+
+      return names[scenarioName] || scenarioName;
+    }
+
+    function drawInfoPanel() {
+      const U = totalInternalEnergy(particles);
+      const N = particles.length;
+      const avgKE = N > 0 ? U / N : 0;
+      const Tsim = avgKE;
+
+      const x = 750;
+      const y = 405;
+
+      drawText(`Scenario: ${scenarioDisplayName(scenario)}`, x, y);
+      drawText(`Particles: ${N}`, x, y + 30);
+      drawText(`Total U: ${U.toLocaleString(undefined, { maximumFractionDigits: 1 })}`, x, y + 60);
+      drawText(`Avg KE: ${avgKE.toLocaleString(undefined, { maximumFractionDigits: 1 })}`, x, y + 90);
+      drawText(`Sim T: ${Tsim.toLocaleString(undefined, { maximumFractionDigits: 1 })}`, x, y + 120);
+      drawText(`Status: ${paused ? "Paused" : "Running"}`, x, y + 150);
+
+      const y2 = y + 180;
+      drawText("Keyboard", x, y2);
+      drawText("1-5 select scenario", x, y2 + 25, BLACK, true);
+      drawText("SPACE pause/unpause", x, y2 + 45, BLACK, true);
+      drawText("R reset scenario", x, y2 + 65, BLACK, true);
+      drawText("ESC stop animation", x, y2 + 85, BLACK, true);
+    }
+
+    function drawHeader() {
+      drawText("Ideal Gas: Microscopic Motion and Internal Energy", 30, 20);
+      drawText(
+        "Elastic collisions conserve total kinetic energy, so a closed ideal gas should keep constant internal energy.",
+        30,
+        HEIGHT - 28,
+        DARK_GRAY,
+        true
+      );
+    }
+
+    function drawControls() {
+      drawText("Starting Situation", 750, 20);
+
+      for (const button of scenarioButtons) {
+        button.draw(button.value === scenario);
+      }
+
+      particleSlider.draw();
+    }
+
+    function drawFrame() {
+      ctx.fillStyle = LIGHT_GRAY;
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      drawHeader();
+      drawSimulationBox();
+
+      for (const p of particles) {
+        p.draw();
+      }
+
+      drawControls();
+      drawEnergyPlot();
+      drawInfoPanel();
+    }
+
+    function resetCurrentScenario() {
+      particles = createParticles(scenario, numParticles);
+      energyHistory = [];
+    }
+
+    function setScenario(newScenario) {
+      scenario = newScenario;
+      resetCurrentScenario();
+    }
+
+    function pushEnergy(value) {
+      energyHistory.push(value);
+
+      if (energyHistory.length > ENERGY_HISTORY_LENGTH) {
+        energyHistory.shift();
+      }
+    }
+
+    // ------------------------------------------------------------
+    // UI setup
+    // ------------------------------------------------------------
+
+    const scenarioButtons = [
+      new Button(750, 50, 145, 28, "1 Random", "random"),
+      new Button(915, 50, 145, 28, "2 Cluster", "cold_cluster"),
+      new Button(750, 84, 145, 28, "3 Two-stream", "two_stream"),
+      new Button(915, 84, 145, 28, "4 Hot spot", "hot_spot"),
+      new Button(750, 118, 310, 28, "5 Ring explosion", "ring_explosion"),
+    ];
+
+    const particleSlider = new Slider(
+      750,
+      185,
+      310,
+      MIN_PARTICLES,
+      MAX_PARTICLES,
+      numParticles,
+      5
+    );
+
+    // ------------------------------------------------------------
+    // Main loop state
+    // ------------------------------------------------------------
+
+    let scenario = "random";
+    let particles = createParticles(scenario, numParticles);
+    let energyHistory = [];
+    let paused = false;
+    let running = true;
+    let mousePos = { x: -9999, y: -9999 };
+    let lastTimestamp = performance.now();
+
+    // ------------------------------------------------------------
+    // Events
+    // ------------------------------------------------------------
+
+    canvas.addEventListener("mousemove", (event) => {
+      mousePos = getMousePos(event);
+      particleSlider.mouseMove(mousePos);
+    });
+
+    canvas.addEventListener("mousedown", (event) => {
+      mousePos = getMousePos(event);
+
+      const sliderClicked = particleSlider.mouseDown(mousePos);
+
+      if (!sliderClicked) {
+        for (const button of scenarioButtons) {
+          if (button.contains(mousePos)) {
+            setScenario(button.value);
+            break;
+          }
+        }
+      }
+    });
+
+    window.addEventListener("mouseup", (event) => {
+      mousePos = getMousePos(event);
+
+      const sliderWasReleased = particleSlider.mouseUp(mousePos);
+
+      if (sliderWasReleased) {
+        numParticles = particleSlider.value;
+        resetCurrentScenario();
+      }
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        running = false;
+      } else if (event.key === " ") {
+        paused = !paused;
+        event.preventDefault();
+      } else if (event.key.toLowerCase() === "r") {
+        resetCurrentScenario();
+      } else if (event.key === "1") {
+        setScenario("random");
+      } else if (event.key === "2") {
+        setScenario("cold_cluster");
+      } else if (event.key === "3") {
+        setScenario("two_stream");
+      } else if (event.key === "4") {
+        setScenario("hot_spot");
+      } else if (event.key === "5") {
+        setScenario("ring_explosion");
+      }
+    });
+
+    // ------------------------------------------------------------
+    // Animation loop
+    // ------------------------------------------------------------
+
+    function animate(timestamp) {
+      let dt = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      // Cap dt so the simulation does not explode after a tab switch.
+      dt = Math.min(dt, 1 / 20);
+
+      if (running && !paused) {
+        updateSimulation(dt);
+        pushEnergy(totalInternalEnergy(particles));
+      }
+
+      drawFrame();
+
+      if (running) {
+        requestAnimationFrame(animate);
+      } else {
+        drawText("Animation stopped. Refresh the page to restart.", 750, 655, "rgb(180, 40, 40)", true);
+      }
+    }
+
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
