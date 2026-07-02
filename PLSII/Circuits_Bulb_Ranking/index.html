@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Circuit Brightness Ranking Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+    }
+
+    canvas {
+      background: rgb(245, 245, 245);
+      border: 2px solid #222;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+<canvas id="gameCanvas" width="1000" height="800"></canvas>
+
+<script>
+// ------------------------------------------------------------
+// Basic settings
+// ------------------------------------------------------------
+
+const WIDTH = 1000;
+const HEIGHT = 800;
+
+const BACKGROUND = "rgb(245, 245, 245)";
+const BLACK = "rgb(20, 20, 20)";
+const GRAY = "rgb(130, 130, 130)";
+const LIGHT_GRAY = "rgb(220, 220, 220)";
+const WHITE = "rgb(255, 255, 255)";
+const BLUE = "rgb(80, 130, 210)";
+const GREEN = "rgb(60, 160, 90)";
+const RED = "rgb(200, 80, 80)";
+const YELLOW = "rgb(245, 210, 80)";
+
+const WIRE_WIDTH = 4;
+
+const BULB_RADIUS = 23;
+const BULB_R = 1.0;
+const BATTERY_V = 1.0;
+
+const MAX_BULBS = 6;
+const MIN_BULBS = 3;
+const MAX_DEPTH = 3;
+
+const DRAW_TOP = 90;
+const DRAW_BOTTOM = 500;
+const DRAW_LEFT = 120;
+const DRAW_RIGHT = 900;
+
+const UI_TOP = 515;
+
+// ------------------------------------------------------------
+// Canvas setup
+// ------------------------------------------------------------
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// ------------------------------------------------------------
+// Helper functions
+// ------------------------------------------------------------
+
+function randInt(minInclusive, maxInclusive) {
+  return Math.floor(Math.random() * (maxInclusive - minInclusive + 1)) + minInclusive;
+}
+
+function choice(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+function shuffle(array) {
+  const copy = array.slice();
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function arraysEqual(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function drawText(text, x, y, options = {}) {
+  const {
+    size = 24,
+    color = BLACK,
+    align = "left",
+    baseline = "top",
+    font = "Arial"
+  } = options;
+
+  ctx.font = `${size}px ${font}`;
+  ctx.fillStyle = color;
+  ctx.textAlign = align;
+  ctx.textBaseline = baseline;
+  ctx.fillText(text, x, y);
+}
+
+function textWidth(text, size = 24, font = "Arial") {
+  ctx.font = `${size}px ${font}`;
+  return ctx.measureText(text).width;
+}
+
+function drawWire(start, end) {
+  ctx.strokeStyle = BLACK;
+  ctx.lineWidth = WIRE_WIDTH;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(start.x, start.y);
+  ctx.lineTo(end.x, end.y);
+  ctx.stroke();
+}
+
+function drawCircle(x, y, r, fillColor, strokeColor = null, strokeWidth = 1) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (fillColor) {
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+  }
+  if (strokeColor) {
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = strokeWidth;
+    ctx.stroke();
+  }
+}
+
+function pointInRect(pos, rect) {
+  return (
+    pos.x >= rect.x &&
+    pos.x <= rect.x + rect.w &&
+    pos.y >= rect.y &&
+    pos.y <= rect.y + rect.h
+  );
+}
+
+function roundedRect(x, y, w, h, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+// ------------------------------------------------------------
+// Circuit data structures
+// ------------------------------------------------------------
+
+class Bulb {
+  constructor(label) {
+    this.kind = "bulb";
+    this.label = label;
+    this.voltage = 0.0;
+    this.rect = { x: 0, y: 0, w: 0, h: 0 };
+  }
+}
+
+class Series {
+  constructor(children) {
+    this.kind = "series";
+    this.children = children;
+  }
+}
+
+class Parallel {
+  constructor(children) {
+    this.kind = "parallel";
+    this.children = children;
+  }
+}
+
+// ------------------------------------------------------------
+// Circuit generation
+// ------------------------------------------------------------
+
+function splitInteger(n, k) {
+  const possibleCuts = [];
+  for (let i = 1; i < n; i++) {
+    possibleCuts.push(i);
+  }
+
+  const cuts = shuffle(possibleCuts).slice(0, k - 1).sort((a, b) => a - b);
+
+  const pieces = [];
+  let prev = 0;
+  for (const c of cuts) {
+    pieces.push(c - prev);
+    prev = c;
+  }
+  pieces.push(n - prev);
+  return pieces;
+}
+
+function countBulbs(node) {
+  if (node.kind === "bulb") {
+    return 1;
+  }
+
+  return node.children.reduce((total, child) => total + countBulbs(child), 0);
+}
+
+function generateCircuit(numBulbs, labels, depth = 0, forceType = null) {
+  if (numBulbs === 1 || depth >= MAX_DEPTH) {
+    return new Bulb(labels.shift());
+  }
+
+  let NodeClass;
+  if (forceType === "series") {
+    NodeClass = Series;
+  } else if (forceType === "parallel") {
+    NodeClass = Parallel;
+  } else {
+    NodeClass = choice([Series, Parallel]);
+  }
+
+  let k;
+  if (numBulbs >= 4 && Math.random() < 0.25) {
+    k = 3;
+  } else {
+    k = 2;
+  }
+
+  const pieces = splitInteger(numBulbs, k);
+  const children = [];
+
+  for (const piece of pieces) {
+    children.push(generateCircuit(piece, labels, depth + 1));
+  }
+
+  return new NodeClass(children);
+}
+
+function makeNewRandomCircuit() {
+  const numBulbs = randInt(MIN_BULBS, MAX_BULBS);
+  const labels = [];
+  for (let i = 0; i < numBulbs; i++) {
+    labels.push(String.fromCharCode("A".charCodeAt(0) + i));
+  }
+
+  const template = choice(["random", "series_with_parallel", "parallel_with_series"]);
+
+  if (template === "series_with_parallel" && numBulbs >= 3) {
+    const labelsCopy = labels.slice();
+
+    const left = new Bulb(labelsCopy.shift());
+
+    const middleCount = numBulbs - 2;
+    const middleBulbs = [];
+    for (let i = 0; i < middleCount; i++) {
+      middleBulbs.push(new Bulb(labelsCopy.shift()));
+    }
+
+    const middle = new Parallel(middleBulbs);
+    const right = new Bulb(labelsCopy.shift());
+
+    return new Series([left, middle, right]);
+  }
+
+  if (template === "parallel_with_series" && numBulbs >= 3) {
+    const labelsCopy = labels.slice();
+
+    const branch1 = new Bulb(labelsCopy.shift());
+
+    const branch2Count = numBulbs - 1;
+    const branch2Bulbs = [];
+    for (let i = 0; i < branch2Count; i++) {
+      branch2Bulbs.push(new Bulb(labelsCopy.shift()));
+    }
+
+    const branch2 = new Series(branch2Bulbs);
+
+    return new Parallel([branch1, branch2]);
+  }
+
+  return generateCircuit(numBulbs, labels.slice());
+}
+
+// ------------------------------------------------------------
+// Circuit solving
+// ------------------------------------------------------------
+
+function equivalentResistance(node) {
+  if (node.kind === "bulb") {
+    return BULB_R;
+  }
+
+  if (node.kind === "series") {
+    return node.children.reduce((total, child) => total + equivalentResistance(child), 0);
+  }
+
+  if (node.kind === "parallel") {
+    let invTotal = 0.0;
+    for (const child of node.children) {
+      invTotal += 1.0 / equivalentResistance(child);
+    }
+    return 1.0 / invTotal;
+  }
+
+  throw new Error("Unknown node kind");
+}
+
+function assignVoltages(node, voltage) {
+  if (node.kind === "bulb") {
+    node.voltage = voltage;
+    return;
+  }
+
+  if (node.kind === "series") {
+    const totalR = equivalentResistance(node);
+
+    for (const child of node.children) {
+      const childR = equivalentResistance(child);
+      const childV = voltage * childR / totalR;
+      assignVoltages(child, childV);
+    }
+  } else if (node.kind === "parallel") {
+    for (const child of node.children) {
+      assignVoltages(child, voltage);
+    }
+  }
+}
+
+function collectBulbs(node) {
+  if (node.kind === "bulb") {
+    return [node];
+  }
+
+  let bulbs = [];
+  for (const child of node.children) {
+    bulbs = bulbs.concat(collectBulbs(child));
+  }
+  return bulbs;
+}
+
+function correctRankingGroups(bulbs, tolerance = 1e-6) {
+  const sortedBulbs = bulbs.slice().sort((a, b) => b.voltage - a.voltage);
+
+  const groups = [];
+
+  for (const bulb of sortedBulbs) {
+    let placed = false;
+
+    for (const group of groups) {
+      const representativeLabel = group[0];
+      const representative = bulbs.find(b => b.label === representativeLabel);
+
+      if (Math.abs(bulb.voltage - representative.voltage) < tolerance) {
+        group.push(bulb.label);
+        placed = true;
+        break;
+      }
+    }
+
+    if (!placed) {
+      groups.push([bulb.label]);
+    }
+  }
+
+  for (const group of groups) {
+    group.sort();
+  }
+
+  return groups;
+}
+
+function normalizeUserGroups(groups) {
+  const clean = [];
+
+  for (const group of groups) {
+    if (group.length > 0) {
+      clean.push(group.slice().sort());
+    }
+  }
+
+  return clean;
+}
+
+function rankingToString(groups) {
+  return groups.map(group => group.join(" = ")).join(" > ");
+}
+
+// ------------------------------------------------------------
+// Drawing layout
+// ------------------------------------------------------------
+
+function measureNode(node) {
+  if (node.kind === "bulb") {
+    return { w: 90, h: 80 };
+  }
+
+  if (node.kind === "series") {
+    const childSizes = node.children.map(child => measureNode(child));
+    const width = childSizes.reduce((total, size) => total + size.w, 0) + 30 * (childSizes.length - 1);
+    const height = Math.max(...childSizes.map(size => size.h));
+    return { w: width, h: height };
+  }
+
+  if (node.kind === "parallel") {
+    const childSizes = node.children.map(child => measureNode(child));
+    const width = Math.max(...childSizes.map(size => size.w)) + 120;
+    const height = childSizes.reduce((total, size) => total + size.h, 0) + 25 * (childSizes.length - 1);
+    return { w: width, h: height };
+  }
+
+  throw new Error("Unknown node kind");
+}
+
+function circuitFitsDrawSpace(circuit, marginX = 20, marginY = 20) {
+  const needed = measureNode(circuit);
+
+  const availableW = (DRAW_RIGHT - DRAW_LEFT) - 2 * marginX;
+  const availableH = (DRAW_BOTTOM - DRAW_TOP) - 2 * marginY;
+
+  return needed.w <= availableW && needed.h <= availableH;
+}
+
+function drawBulb(bulb, x, y, w, h) {
+  const cy = y + h / 2;
+  const leftPort = { x: x, y: cy };
+  const rightPort = { x: x + w, y: cy };
+  const center = { x: x + w / 2, y: cy };
+
+  drawWire(leftPort, { x: center.x - BULB_RADIUS, y: cy });
+  drawWire({ x: center.x + BULB_RADIUS, y: cy }, rightPort);
+
+  drawCircle(center.x, center.y, BULB_RADIUS, YELLOW, BLACK, 3);
+
+  // Little filament arc.
+  ctx.strokeStyle = BLACK;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(center.x, center.y, 13, Math.PI, 2 * Math.PI);
+  ctx.stroke();
+
+  const labelOffsetY = -35;
+  drawText(bulb.label, center.x, center.y + labelOffsetY, {
+    size: 30,
+    color: BLACK,
+    align: "center",
+    baseline: "middle"
+  });
+
+  bulb.rect = {
+    x: center.x - BULB_RADIUS,
+    y: center.y - BULB_RADIUS,
+    w: 2 * BULB_RADIUS,
+    h: 2 * BULB_RADIUS
+  };
+
+  return { leftPort, rightPort };
+}
+
+function drawNode(node, x, y, w, h) {
+  if (node.kind === "bulb") {
+    return drawBulb(node, x, y, w, h);
+  }
+
+  if (node.kind === "series") {
+    const childSizes = node.children.map(child => measureNode(child));
+    const spacing = 30;
+
+    const totalChildWidth = childSizes.reduce((total, size) => total + size.w, 0);
+    const totalWidth = totalChildWidth + spacing * (node.children.length - 1);
+
+    let currentX = x + (w - totalWidth) / 2;
+    let previousRight = null;
+    let firstLeft = null;
+    let lastRight = null;
+
+    for (let i = 0; i < node.children.length; i++) {
+      const child = node.children[i];
+      const size = childSizes[i];
+
+      const childY = y + (h - size.h) / 2;
+      const ports = drawNode(child, currentX, childY, size.w, size.h);
+
+      if (previousRight !== null) {
+        drawWire(previousRight, ports.leftPort);
+      }
+
+      if (firstLeft === null) {
+        firstLeft = ports.leftPort;
+      }
+
+      previousRight = ports.rightPort;
+      lastRight = ports.rightPort;
+
+      currentX += size.w + spacing;
+    }
+
+    return { leftPort: firstLeft, rightPort: lastRight };
+  }
+
+  if (node.kind === "parallel") {
+    const childSizes = node.children.map(child => measureNode(child));
+
+    const busLeftX = x + 35;
+    const busRightX = x + w - 35;
+    const innerX = x + 70;
+    const innerW = w - 140;
+
+    const spacing = 25;
+    const totalChildHeight = childSizes.reduce((total, size) => total + size.h, 0);
+    const totalHeight = totalChildHeight + spacing * (node.children.length - 1);
+
+    let currentY = y + (h - totalHeight) / 2;
+
+    const branchLeftPorts = [];
+    const branchRightPorts = [];
+
+    for (let i = 0; i < node.children.length; i++) {
+      const child = node.children[i];
+      const size = childSizes[i];
+
+      const childX = innerX + (innerW - size.w) / 2;
+      const ports = drawNode(child, childX, currentY, size.w, size.h);
+
+      drawWire({ x: busLeftX, y: ports.leftPort.y }, ports.leftPort);
+      drawWire(ports.rightPort, { x: busRightX, y: ports.rightPort.y });
+
+      branchLeftPorts.push({ x: busLeftX, y: ports.leftPort.y });
+      branchRightPorts.push({ x: busRightX, y: ports.rightPort.y });
+
+      currentY += size.h + spacing;
+    }
+
+    const topY = branchLeftPorts[0].y;
+    const bottomY = branchLeftPorts[branchLeftPorts.length - 1].y;
+    const centerY = y + h / 2;
+
+    drawWire({ x: busLeftX, y: topY }, { x: busLeftX, y: bottomY });
+    drawWire({ x: busRightX, y: topY }, { x: busRightX, y: bottomY });
+
+    const leftPort = { x: x, y: centerY };
+    const rightPort = { x: x + w, y: centerY };
+
+    drawWire(leftPort, { x: busLeftX, y: centerY });
+    drawWire({ x: busRightX, y: centerY }, rightPort);
+
+    return { leftPort, rightPort };
+  }
+
+  throw new Error("Unknown node kind");
+}
+
+function drawBattery(leftPort, rightPort) {
+  const batteryX = 55;
+  const batteryY = leftPort.y;
+
+  const longPlateX = batteryX;
+  const shortPlateX = batteryX + 22;
+
+  // Wire from battery's right plate to circuit.
+  // Draw this first so the battery plate sits cleanly on top.
+  drawWire({ x: shortPlateX, y: batteryY }, leftPort);
+
+  ctx.strokeStyle = BLACK;
+  ctx.lineWidth = 5;
+  ctx.lineCap = "round";
+
+  // Long plate.
+  ctx.beginPath();
+  ctx.moveTo(longPlateX, batteryY - 32);
+  ctx.lineTo(longPlateX, batteryY + 32);
+  ctx.stroke();
+
+  // Short plate.
+  ctx.beginPath();
+  ctx.moveTo(shortPlateX, batteryY - 20);
+  ctx.lineTo(shortPlateX, batteryY + 20);
+  ctx.stroke();
+
+  drawText("+", batteryX - 7, batteryY - 62, {
+    size: 24,
+    color: BLACK,
+    align: "left",
+    baseline: "top"
+  });
+
+  drawText("−", batteryX + 15, batteryY + 35, {
+    size: 24,
+    color: BLACK,
+    align: "left",
+    baseline: "top"
+  });
+
+  drawText("Battery", batteryX - 25, batteryY - 95, {
+    size: 24,
+    color: BLACK,
+    align: "left",
+    baseline: "top"
+  });
+}
+
+// ------------------------------------------------------------
+// Buttons
+// ------------------------------------------------------------
+
+class Button {
+  constructor(x, y, w, h, text, color = LIGHT_GRAY) {
+    this.rect = { x, y, w, h };
+    this.text = text;
+    this.color = color;
+  }
+
+  draw() {
+    roundedRect(this.rect.x, this.rect.y, this.rect.w, this.rect.h, 8);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+
+    ctx.strokeStyle = BLACK;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    drawText(this.text, this.rect.x + this.rect.w / 2, this.rect.y + this.rect.h / 2, {
+      size: 20,
+      color: BLACK,
+      align: "center",
+      baseline: "middle"
+    });
+  }
+
+  clicked(pos) {
+    return pointInRect(pos, this.rect);
+  }
+}
+
+// ------------------------------------------------------------
+// Game state
+// ------------------------------------------------------------
+
+function newGame() {
+  const maxAttempts = 100;
+  let circuit = null;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const candidate = makeNewRandomCircuit();
+
+    if (circuitFitsDrawSpace(candidate)) {
+      circuit = candidate;
+      break;
+    }
+  }
+
+  if (circuit === null) {
+    circuit = new Series([
+      new Bulb("A"),
+      new Parallel([
+        new Bulb("B"),
+        new Bulb("C")
+      ]),
+      new Bulb("D")
+    ]);
+  }
+
+  assignVoltages(circuit, BATTERY_V);
+  const bulbs = collectBulbs(circuit);
+  const answer = correctRankingGroups(bulbs);
+
+  return {
+    circuit,
+    bulbs,
+    answer,
+    userGroups: [[]],
+    selected: new Set(),
+    feedback: "Click the brightest bulb or bulbs first.",
+    showAnswer: false
+  };
+}
+
+function handleBulbClick(state, label) {
+  if (state.selected.has(label)) {
+    return;
+  }
+
+  state.userGroups[state.userGroups.length - 1].push(label);
+  state.selected.add(label);
+  state.feedback = `Added bulb ${label} to the current brightness group.`;
+}
+
+function nextGroup(state) {
+  const currentGroup = state.userGroups[state.userGroups.length - 1];
+
+  if (currentGroup.length === 0) {
+    state.feedback = "Add at least one bulb before starting the next group.";
+    return;
+  }
+
+  if (state.selected.size === state.bulbs.length) {
+    state.feedback = "All bulbs are already placed. Check your answer.";
+    return;
+  }
+
+  state.userGroups.push([]);
+  state.feedback = "Now click the next-dimmer bulb or bulbs.";
+}
+
+function previousGroup(state) {
+  if (state.userGroups.length === 1 && state.userGroups[0].length === 0) {
+    state.feedback = "You are already at the first brightness group.";
+    return;
+  }
+
+  const currentGroup = state.userGroups[state.userGroups.length - 1];
+
+  // If the current group has bulbs, unselect them.
+  if (currentGroup.length > 0) {
+    for (const label of currentGroup) {
+      state.selected.delete(label);
+    }
+
+    if (state.userGroups.length > 1) {
+      state.userGroups.pop();
+      state.feedback = "Moved back one group. Re-enter the next-dimmer group when ready.";
+    } else {
+      state.userGroups[0] = [];
+      state.feedback = "Cleared the first brightness group.";
+    }
+
+    state.showAnswer = false;
+    return;
+  }
+
+  // If the current group is empty and is not the first group, remove it.
+  if (state.userGroups.length > 1) {
+    state.userGroups.pop();
+    state.feedback = "Moved back to the previous brightness group.";
+  } else {
+    state.feedback = "You are already at the first brightness group.";
+  }
+
+  state.showAnswer = false;
+}
+
+function resetAnswer(state) {
+  state.userGroups = [[]];
+  state.selected = new Set();
+  state.feedback = "Answer reset. Click the brightest bulb or bulbs first.";
+  state.showAnswer = false;
+}
+
+function checkAnswer(state) {
+  const user = normalizeUserGroups(state.userGroups);
+  const correct = state.answer;
+
+  if (state.selected.size < state.bulbs.length) {
+    state.feedback = "You have not placed every bulb yet.";
+    state.showAnswer = false;
+    return;
+  }
+
+  if (arraysEqual(user, correct)) {
+    state.feedback = "Correct! Nice ranking.";
+    state.showAnswer = true;
+  } else {
+    state.feedback = "Not quite. Compare equal-brightness groups and try again.";
+    state.showAnswer = false;
+  }
+}
+
+// ------------------------------------------------------------
+// Drawing UI
+// ------------------------------------------------------------
+
+function drawAnswerArea(state, buttons) {
+  ctx.fillStyle = WHITE;
+  ctx.fillRect(95, UI_TOP, WIDTH, HEIGHT - UI_TOP);
+
+  ctx.strokeStyle = BLACK;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, UI_TOP);
+  ctx.lineTo(WIDTH, UI_TOP);
+  ctx.stroke();
+
+  drawText("Rank the bulbs from brightest to dimmest.", 30, UI_TOP - 450, {
+    size: 30,
+    color: BLACK
+  });
+
+  drawText(
+    "Click bulbs for one brightness group. Use Next/Previous Group to move between brightness levels.",
+    30,
+    UI_TOP - 415,
+    {
+      size: 20,
+      color: BLACK
+    }
+  );
+
+  const userGroups = normalizeUserGroups(state.userGroups);
+  const userText = userGroups.length > 0 ? rankingToString(userGroups) : "(no bulbs selected yet)";
+
+  drawText(`Your ranking: ${userText}`, 100, UI_TOP + 15, {
+    size: 30,
+    color: BLUE
+  });
+
+  drawText(state.feedback, 100, UI_TOP + 55, {
+    size: 30,
+    color: BLACK
+  });
+
+  if (state.showAnswer) {
+    const correctText = rankingToString(state.answer);
+    drawText(`Correct ranking: ${correctText}`, 100, UI_TOP + 100, {
+      size: 30,
+      color: GREEN
+    });
+  }
+
+  for (const button of buttons) {
+    button.draw();
+  }
+}
+
+function drawSelectedMarkers(state) {
+  for (let groupIndex = 0; groupIndex < state.userGroups.length; groupIndex++) {
+    const group = state.userGroups[groupIndex];
+
+    for (const label of group) {
+      const bulb = state.bulbs.find(b => b.label === label);
+      if (!bulb) {
+        continue;
+      }
+
+      const markerCenter = {
+        x: bulb.rect.x + bulb.rect.w / 2,
+        y: bulb.rect.y - 16
+      };
+
+      drawCircle(markerCenter.x, markerCenter.y, 13, BLUE);
+
+      drawText(String(groupIndex + 1), markerCenter.x, markerCenter.y, {
+        size: 20,
+        color: WHITE,
+        align: "center",
+        baseline: "middle"
+      });
+    }
+  }
+}
+
+function drawReturnWire(leftPort, rightPort) {
+  const batteryX = 55;
+  const batteryY = leftPort.y;
+
+  const lowerTerminal = {
+    x: batteryX,
+    y: batteryY
+  };
+
+  const returnY = DRAW_BOTTOM + 5;
+  const returnX = batteryX - 35;
+
+  drawWire(rightPort, { x: rightPort.x, y: returnY });
+  drawWire({ x: rightPort.x, y: returnY }, { x: returnX, y: returnY });
+  drawWire({ x: returnX, y: returnY }, { x: returnX, y: lowerTerminal.y });
+  drawWire({ x: returnX, y: lowerTerminal.y }, lowerTerminal);
+}
+
+// ------------------------------------------------------------
+// Main game setup
+// ------------------------------------------------------------
+
+let state = newGame();
+
+const buttons = [
+  new Button(30, 730, 185, 42, "Previous Group"),
+  new Button(230, 730, 185, 42, "Next Dimmer Group"),
+  new Button(430, 730, 130, 42, "Check Answer"),
+  new Button(575, 730, 130, 42, "Reset"),
+  new Button(720, 730, 140, 42, "New Circuit")
+];
+
+// ------------------------------------------------------------
+// Input
+// ------------------------------------------------------------
+
+canvas.addEventListener("mousedown", event => {
+  const rect = canvas.getBoundingClientRect();
+
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  const pos = {
+    x: (event.clientX - rect.left) * scaleX,
+    y: (event.clientY - rect.top) * scaleY
+  };
+
+  if (buttons[0].clicked(pos)) {
+    previousGroup(state);
+  } else if (buttons[1].clicked(pos)) {
+    nextGroup(state);
+  } else if (buttons[2].clicked(pos)) {
+    checkAnswer(state);
+  } else if (buttons[3].clicked(pos)) {
+    resetAnswer(state);
+  } else if (buttons[4].clicked(pos)) {
+    state = newGame();
+  } else {
+    for (const bulb of state.bulbs) {
+      if (pointInRect(pos, bulb.rect)) {
+        handleBulbClick(state, bulb.label);
+        break;
+      }
+    }
+  }
+
+  draw();
+});
+
+window.addEventListener("keydown", event => {
+  if (event.key === "n" || event.key === "N") {
+    state = newGame();
+    draw();
+  } else if (event.key === "r" || event.key === "R") {
+    resetAnswer(state);
+    draw();
+  }
+});
+
+// ------------------------------------------------------------
+// Drawing loop
+// ------------------------------------------------------------
+
+function draw() {
+  ctx.fillStyle = BACKGROUND;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  drawText("Circuit Brightness Ranking", 30, 15, {
+    size: 42,
+    color: BLACK
+  });
+
+  const circuit = state.circuit;
+  const needed = measureNode(circuit);
+
+  const drawW = needed.w;
+  const drawH = needed.h;
+
+  const x = DRAW_LEFT + (DRAW_RIGHT - DRAW_LEFT - drawW) / 2;
+  const y = DRAW_TOP + (DRAW_BOTTOM - DRAW_TOP - drawH) / 2;
+
+  const ports = drawNode(circuit, x, y, drawW, drawH);
+
+  drawBattery(ports.leftPort, ports.rightPort);
+  drawReturnWire(ports.leftPort, ports.rightPort);
+
+  drawSelectedMarkers(state);
+  drawAnswerArea(state, buttons);
+}
+
+draw();
+</script>
+</body>
+</html>
+path.write_text(html, encoding="utf-8")
+path.as_posix()
