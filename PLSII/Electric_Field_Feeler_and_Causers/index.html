@@ -1,129 +1,598 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Electric Field Charge Builder</title>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Electric Field Feeler and Causers</title>
   <style>
+    :root {
+      --page-bg: #eef1f5;
+      --panel-bg: #ffffff;
+      --text: #172033;
+      --muted-text: #5d6678;
+      --border: #cfd6e3;
+      --primary-blue: #2563eb;
+      --primary-blue-dark: #1d4ed8;
+      --success-green: #16803c;
+      --warning-amber: #f59e0b;
+      --error-red: #dc2626;
+      --focus-amber: #fbbf24;
+      --header-bg: #111827;
+      --header-text: #f9fafb;
+      --canvas-bg: #fbfcff;
+      --grid-minor: #e6eaf0;
+      --grid-major: #c9d1df;
+      --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      background: var(--page-bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    a {
+      color: var(--primary-blue-dark);
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 1rem;
+      top: 0.5rem;
+      z-index: 1000;
+      transform: translateY(-150%);
+      background: var(--focus-amber);
+      color: #111827;
+      padding: 0.65rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 700;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+      outline: 3px solid #111827;
+      outline-offset: 2px;
+    }
+
+    header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1.35rem clamp(1rem, 4vw, 2.5rem);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(1.55rem, 4vw, 2.35rem);
+      line-height: 1.15;
+    }
+
+    header p {
+      max-width: 70rem;
+      margin: 0.5rem 0 0;
+      color: #d8deea;
+      font-size: 1.02rem;
+    }
+
+    main {
+      width: min(1500px, calc(100% - 2rem));
+      margin: 1rem auto 2rem;
+    }
+
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+    }
+
+    .how-to-use {
+      margin-bottom: 1rem;
+    }
+
+    .how-to-use h2,
+    .card h2,
+    .card h3 {
+      margin-top: 0;
+      line-height: 1.2;
+    }
+
+    .how-to-use ul {
+      margin-bottom: 0;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(500px, 560px) minmax(0, 1fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .controls-column,
+    .output-column,
+    .card,
+    .canvas-wrap {
+      min-width: 0;
+    }
+
+    .controls-column,
+    .output-column {
+      display: grid;
+      gap: 1rem;
+    }
+
+    fieldset {
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 0.9rem;
+      margin: 0 0 1rem;
+    }
+
+    legend {
+      padding: 0 0.35rem;
+      font-weight: 800;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    select {
+      width: 100%;
+      min-height: 2.5rem;
+      border: 1px solid var(--border);
+      border-radius: 0.55rem;
+      padding: 0.45rem 0.6rem;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+
+    input:focus,
+    select:focus,
+    button:focus,
+    canvas:focus {
+      outline: 3px solid var(--focus-amber);
+      outline-offset: 3px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .button-row,
+    .nudge-grid {
       display: flex;
-    }
-
-    #canvas {
-      background: #fafaff;
-      border-right: 3px solid black;
-    }
-
-    #panel {
-      width: 330px;
-      height: 700px;
-      background: #ebebf0;
-      padding: 18px;
-      box-sizing: border-box;
-      overflow-y: auto;
-    }
-
-    .charge-row {
-      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
     }
 
-    .charge-row label {
-      width: 75px;
-    }
-
-    .charge-row input {
-      width: 135px;
-      font-size: 14px;
-      padding: 4px;
-    }
-
-    .charge-row button {
-      width: 28px;
-      height: 28px;
-      background: #ffd2d2;
-      border: 1px solid black;
-      border-radius: 4px;
+    button {
+      border: 1px solid var(--primary-blue);
+      border-radius: 0.65rem;
+      min-height: 2.45rem;
+      padding: 0.55rem 0.85rem;
+      font: inherit;
+      font-weight: 800;
       cursor: pointer;
+      background: #fff;
+      color: var(--primary-blue-dark);
     }
 
-    #info {
-      border-top: 2px solid #aaa;
-      margin-top: 20px;
-      padding-top: 12px;
-      font-size: 14px;
+    button.primary {
+      background: var(--primary-blue);
+      color: #fff;
     }
 
-    .selected {
-      color: #965adc;
-      font-weight: bold;
+    button.primary:hover,
+    button.primary:focus-visible {
+      background: var(--primary-blue-dark);
+    }
+
+    button.secondary:hover,
+    button.secondary:focus-visible {
+      background: #eff6ff;
+    }
+
+    button.danger {
+      background: var(--error-red);
+      border-color: var(--error-red);
+      color: #fff;
+    }
+
+    button.danger:hover,
+    button.danger:focus-visible {
+      background: #b91c1c;
+    }
+
+    button.small {
+      min-height: 2rem;
+      padding: 0.3rem 0.55rem;
+      border-radius: 0.45rem;
+      font-size: 0.92rem;
+    }
+
+    .muted {
+      color: var(--muted-text);
+    }
+
+    .note {
+      border-left: 5px solid var(--warning-amber);
+      background: #fff7ed;
+      padding: 0.75rem 0.9rem;
+      border-radius: 0.5rem;
+      color: #5f3d00;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      overflow: auto;
+      background: #dfe5ee;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 0.55rem;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      background: var(--canvas-bg);
+      border: 2px solid var(--border);
+      border-radius: 0.75rem;
+    }
+
+    .canvas-instruction {
+      margin-top: 0.65rem;
+      color: var(--muted-text);
+      font-size: 0.95rem;
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+    }
+
+    .readout {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 0.8rem;
+      padding: 0.65rem;
+      overflow-wrap: anywhere;
+    }
+
+    .readout strong {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .charge-table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--border);
+      padding: 0.55rem;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f1f5f9;
+      font-weight: 800;
+    }
+
+    tr.selected-row {
+      background: #fff7db;
+    }
+
+    .charge-input {
+      min-width: 9.5rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border-radius: 999px;
+      padding: 0.2rem 0.55rem;
+      font-size: 0.86rem;
+      font-weight: 800;
+      background: #e0f2fe;
+      color: #075985;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .accessibility-card {
+      margin-top: 1rem;
+    }
+
+    .output-column .card {
+      padding: 0.85rem;
+    }
+
+    .output-column h2 {
+      margin-bottom: 0.7rem;
+    }
+
+    @media (max-width: 1320px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .readout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 580px) {
+      main {
+        width: min(100% - 1rem, 1500px);
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 0.85rem;
+      }
     }
   </style>
 </head>
-
 <body>
-  <canvas id="canvas" width="820" height="700"></canvas>
+  <a class="skip-link" href="#main-content">Skip to simulation</a>
 
-  <div id="panel">
-    <h2>Charges</h2>
+  <header>
+    <h1>Electric Field Feeler and Causers</h1>
+    <p>
+      Place charges, edit their values, and choose a feeler charge to compare the electric field produced by the source charges with the force on the selected charge.
+    </p>
+  </header>
 
-    <p>Click empty field space to add a charge.</p>
-    <p>Click a charge to make it the feeler.</p>
-    <p>Drag a charge to move it.</p>
-    <p>Edit charge values in coulombs.</p>
+  <main id="main-content">
+    <section class="card how-to-use" aria-labelledby="how-to-use-title">
+      <h2 id="how-to-use-title">How to use</h2>
+      <ul>
+        <li>Click or tap inside the field region to add a positive charge. By default, each new charge has the charge of a proton.</li>
+        <li>Click a charge to select it as the <strong>feeler</strong>: 
+          <ul>
+            <li>The field arrows change to show the electric field caused by all other charges, the <strong>causers</strong>.</li>
+            <li>The arrow on the feeling charge indicates the <strong>direction</strong> of the total electric force acting on the feeling charge.</li>
+          </ul> 
+        </li>
+        <li>Drag a charge to move it. After dragging, the feeler is deselected so the display returns to the total electric field.</li>
+        <li>Edit charges in the table using scientific notation such as <code>1.602e-19</code>, <code>-1.602e-19</code>, or <code>1e-9</code>.</li>
+        <li>You can use the keyboard controls to add, select, remove, and nudge charges without using the canvas.</li>
+      </ul>
+    </section>
 
-    <hr>
+    <div class="layout">
+      <section class="controls-column" aria-label="Simulation controls">
+        <div class="card">
+          <h2>Charges</h2>
+          <p class="muted">Use the table as a text alternative to the visual charge layout. Selecting a charge makes it the feeler.</p>
+          <div class="charge-table-wrap">
+            <table aria-describedby="charge-table-caption">
+              <caption id="charge-table-caption" class="sr-only">List of charges, positions, values, and controls</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Charge</th>
+                  <th scope="col">Value (C)</th>
+                  <th scope="col">Position</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="charge-table-body">
+                <tr><td colspan="4">No charges yet.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-    <div id="chargeControls"></div>
+        <div class="card">
+          <h2>Controls</h2>
 
-    <div id="info">
-      <h2>Field / Force Info</h2>
-      <div id="fieldInfo">No feeler selected.</div>
+          <fieldset>
+            <legend>Add a charge</legend>
+            <div class="form-grid">
+              <div>
+                <label for="add-x-cm">x-position (cm)</label>
+                <input id="add-x-cm" type="number" step="1" value="80" />
+              </div>
+              <div>
+                <label for="add-y-cm">y-position (cm)</label>
+                <input id="add-y-cm" type="number" step="1" value="70" />
+              </div>
+              <div>
+                <label for="default-charge">new charge value (C)</label>
+                <input id="default-charge" type="text" value="1.602e-19" inputmode="decimal" />
+              </div>
+              <div>
+                <label for="charge-preset">quick preset</label>
+                <select id="charge-preset">
+                  <option value="1.602e-19">+e, proton-sized</option>
+                  <option value="-1.602e-19">−e, electron-sized</option>
+                  <option value="1e-9">+1 nC</option>
+                  <option value="-1e-9">−1 nC</option>
+                  <option value="1e-6">+1 μC</option>
+                  <option value="-1e-6">−1 μC</option>
+                </select>
+              </div>
+            </div>
+            <div class="button-row" style="margin-top: 0.75rem;">
+              <button class="primary" id="add-charge-button" type="button">Add charge at position</button>
+              <button class="secondary" id="add-center-button" type="button">Add at center</button>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Display and animation</legend>
+            <div class="button-row">
+              <button class="secondary" id="pause-button" type="button">Pause redraw</button>
+              <button class="secondary" id="step-button" type="button">Step once</button>
+              <button class="secondary" id="clear-selection-button" type="button">Clear feeler</button>
+              <button class="danger" id="reset-button" type="button">Reset all charges</button>
+            </div>
+            <p class="muted" id="display-note">
+              The arrow lengths are adaptively scaled so the direction pattern remains visible. Numerical readouts preserve the calculated values.
+            </p>
+          </fieldset>
+
+          <fieldset>
+            <legend>Keyboard movement</legend>
+            <label for="selected-charge-select">selected charge</label>
+            <select id="selected-charge-select">
+              <option value="">No feeler selected</option>
+            </select>
+            <div class="nudge-grid" style="margin-top: 0.75rem;" aria-label="Nudge selected charge">
+              <button class="secondary small" data-nudge="0,-5" type="button">Up</button>
+              <button class="secondary small" data-nudge="-5,0" type="button">Left</button>
+              <button class="secondary small" data-nudge="5,0" type="button">Right</button>
+              <button class="secondary small" data-nudge="0,5" type="button">Down</button>
+            </div>
+            <p class="muted">
+              When the canvas is focused, arrow keys move the selected charge by 5 px. Hold Shift for 20 px steps.
+            </p>
+          </fieldset>
+        </div>
+      </section>
+
+      <section class="output-column" aria-label="Simulation output">
+        <div class="card">
+          <h2>Interactive field region</h2>
+          <div class="canvas-wrap">
+            <canvas id="field-canvas" width="820" height="700" tabindex="0" role="img" aria-labelledby="canvas-title" aria-describedby="canvas-description"></canvas>
+          </div>
+          <p id="canvas-title" class="sr-only">Electric field diagram with draggable point charges</p>
+          <p id="canvas-description" class="canvas-instruction">
+            Canvas interaction: click empty space to add a charge, click a charge to select it as the feeler, and drag a charge to move it. The grid is labeled in centimeters.
+          </p>
+        </div>
+
+        <div class="card" aria-labelledby="readouts-title">
+          <h2 id="readouts-title">Accessible readouts</h2>
+          <div class="readout-grid">
+            <div class="readout" aria-live="polite">
+              <strong>Current display mode</strong>
+              <span id="mode-readout">Showing total electric field from all charges.</span>
+            </div>
+            <div class="readout" aria-live="polite">
+              <strong>Selected feeler</strong>
+              <span id="feeler-readout">No feeler selected.</span>
+            </div>
+            <div class="readout">
+              <strong>Electric field at feeler</strong>
+              <span id="field-readout">No feeler selected.</span>
+            </div>
+            <div class="readout">
+              <strong>Force on feeler</strong>
+              <span id="force-readout">No feeler selected.</span>
+            </div>
+          </div>
+          <p class="note" id="scale-note">
+            Distance scale: 1 meter = 500 pixels, so 1 centimeter = 5 pixels. Charges have a 12-pixel contact distance to avoid the infinite point-charge limit. Proton-sized charges at centimeter distances produce very small forces; try nanocoulomb or microcoulomb presets for more familiar classroom-scale values.
+          </p>
+        </div>
+      </section>
     </div>
-  </div>
+
+    <div id="live-region" class="sr-only" aria-live="polite"></div>
+  </main>
 
   <script>
-    const canvas = document.getElementById("canvas");
+    const canvas = document.getElementById("field-canvas");
     const ctx = canvas.getContext("2d");
 
     const FIELD_W = 820;
-    const HEIGHT = 700;
+    const FIELD_H = 700;
 
     const K = 8.99e9;
     const E_CHARGE = 1.602e-19;
 
-    // Classroom-friendly distance scale:
-    // 1 m = 500 px, so 1 cm = 5 px.
     const PIXELS_PER_METER = 500;
     const PIXELS_PER_CM = PIXELS_PER_METER / 100;
-
-    const MIN_R_PIXELS = 18;
-    const CHARGE_RADIUS = 13;
-
-    const GRID_SPACING = 60;
-    const ARROW_MAX_LEN = 35;
 
     const MINOR_GRID_CM = 5;
     const MAJOR_GRID_CM = 20;
     const MINOR_GRID_PIXELS = MINOR_GRID_CM * PIXELS_PER_CM;
     const MAJOR_GRID_PIXELS = MAJOR_GRID_CM * PIXELS_PER_CM;
 
+    const MIN_R_PIXELS = 12;
+    const MIN_CHARGE_SEPARATION_PIXELS = MIN_R_PIXELS+1;
+    const GRID_SPACING = 60;
+    const ARROW_MAX_LEN = 35;
+    const CHARGE_RADIUS = 13;
+
+    const FIELD_BG = "#fbfcff";
+    const GRID_MINOR = getComputedStyle(document.documentElement).getPropertyValue("--grid-minor").trim();
+    const GRID_MAJOR = getComputedStyle(document.documentElement).getPropertyValue("--grid-major").trim();
+    const TEXT_COLOR = getComputedStyle(document.documentElement).getPropertyValue("--text").trim();
+    const MUTED_TEXT = getComputedStyle(document.documentElement).getPropertyValue("--muted-text").trim();
+    const ERROR_RED = getComputedStyle(document.documentElement).getPropertyValue("--error-red").trim();
+    const PRIMARY_BLUE = getComputedStyle(document.documentElement).getPropertyValue("--primary-blue").trim();
+    const SUCCESS_GREEN = getComputedStyle(document.documentElement).getPropertyValue("--success-green").trim();
+    const FOCUS_AMBER = getComputedStyle(document.documentElement).getPropertyValue("--focus-amber").trim();
+
     let charges = [];
     let selectedIndex = null;
-
     let draggingIndex = null;
     let dragOffsetX = 0;
     let dragOffsetY = 0;
-
     let didDrag = false;
-    const DRAG_THRESHOLD = 4;
     let mouseDownX = 0;
     let mouseDownY = 0;
+    let redrawPaused = false;
+    let needsDraw = true;
+
+    const DRAG_THRESHOLD = 4;
+
+    const addXCmInput = document.getElementById("add-x-cm");
+    const addYCmInput = document.getElementById("add-y-cm");
+    const defaultChargeInput = document.getElementById("default-charge");
+    const chargePresetSelect = document.getElementById("charge-preset");
+    const chargeTableBody = document.getElementById("charge-table-body");
+    const selectedChargeSelect = document.getElementById("selected-charge-select");
+    const modeReadout = document.getElementById("mode-readout");
+    const feelerReadout = document.getElementById("feeler-readout");
+    const fieldReadout = document.getElementById("field-readout");
+    const forceReadout = document.getElementById("force-readout");
+    const liveRegion = document.getElementById("live-region");
+    const pauseButton = document.getElementById("pause-button");
 
     class Charge {
       constructor(x, y, q = E_CHARGE) {
@@ -133,13 +602,32 @@
       }
     }
 
+    function announce(message) {
+      liveRegion.textContent = message;
+    }
+
     function formatCharge(q) {
+      if (!Number.isFinite(q)) return "0";
       return q.toExponential(3);
+    }
+
+    function formatNumber(value, digits = 3) {
+      if (!Number.isFinite(value)) return "not finite";
+      if (value === 0) return "0";
+      return value.toExponential(digits);
     }
 
     function parseCharge(text) {
       const value = Number(text);
       return Number.isFinite(value) ? value : null;
+    }
+
+    function cmToPixels(cm) {
+      return cm * PIXELS_PER_CM;
+    }
+
+    function pixelsToCm(px) {
+      return px / PIXELS_PER_CM;
     }
 
     function distance(x1, y1, x2, y2) {
@@ -157,9 +645,67 @@
     }
 
     function clampChargePosition(x, y) {
-      x = Math.max(CHARGE_RADIUS, Math.min(FIELD_W - CHARGE_RADIUS, x));
-      y = Math.max(CHARGE_RADIUS, Math.min(HEIGHT - CHARGE_RADIUS, y));
-      return { x, y };
+      return {
+        x: Math.max(CHARGE_RADIUS, Math.min(FIELD_W - CHARGE_RADIUS, x)),
+        y: Math.max(CHARGE_RADIUS, Math.min(FIELD_H - CHARGE_RADIUS, y))
+      };
+    }
+
+    function tooCloseChargeIndex(x, y, excludedIndex = null) {
+      for (let i = 0; i < charges.length; i++) {
+        if (excludedIndex !== null && i === excludedIndex) continue;
+
+        const c = charges[i];
+        if (distance(x, y, c.x, c.y) < MIN_CHARGE_SEPARATION_PIXELS) {
+          return i;
+        }
+      }
+
+      return null;
+    }
+
+    function constrainChargePosition(x, y, movingIndex) {
+      /*
+        Keep a charge inside the field region and prevent it from crossing
+        inside the same minimum distance used by the field calculation.
+        This makes the short-range cutoff feel like a hard contact distance
+        instead of letting the interaction silently turn off.
+      */
+      let position = clampChargePosition(x, y);
+
+      for (let pass = 0; pass < 6; pass++) {
+        let changed = false;
+
+        for (let i = 0; i < charges.length; i++) {
+          if (i === movingIndex) continue;
+
+          const other = charges[i];
+          let dx = position.x - other.x;
+          let dy = position.y - other.y;
+          let d = Math.hypot(dx, dy);
+
+          if (d < MIN_CHARGE_SEPARATION_PIXELS) {
+            if (d < 1e-6) {
+              const angle = ((movingIndex + 1) * Math.PI) / 4;
+              dx = Math.cos(angle);
+              dy = Math.sin(angle);
+              d = 1;
+            }
+
+            const ux = dx / d;
+            const uy = dy / d;
+
+            position.x = other.x + ux * MIN_CHARGE_SEPARATION_PIXELS;
+            position.y = other.y + uy * MIN_CHARGE_SEPARATION_PIXELS;
+            position = clampChargePosition(position.x, position.y);
+            changed = true;
+          }
+        }
+
+        if (!changed) break;
+      }
+
+      return position;
     }
 
     function electricFieldAtPoint(px, py, excludedIndex = null) {
@@ -170,7 +716,6 @@
         if (excludedIndex !== null && i === excludedIndex) continue;
 
         const c = charges[i];
-
         const dxPixels = px - c.x;
         const dyPixels = py - c.y;
         const rPixels = Math.hypot(dxPixels, dyPixels);
@@ -178,10 +723,8 @@
         if (rPixels < MIN_R_PIXELS) continue;
 
         const rMeters = rPixels / PIXELS_PER_METER;
-
         const ux = dxPixels / rPixels;
         const uy = dyPixels / rPixels;
-
         const eMag = K * c.q / (rMeters * rMeters);
 
         exTotal += eMag * ux;
@@ -191,11 +734,84 @@
       return { ex: exTotal, ey: eyTotal };
     }
 
-    function drawArrow(x, y, vx, vy, color = "#555", maxLen = ARROW_MAX_LEN) {
+    function fieldAtSelectedCharge() {
+      if (selectedIndex === null || selectedIndex < 0 || selectedIndex >= charges.length) {
+        return null;
+      }
+      const c = charges[selectedIndex];
+      return electricFieldAtPoint(c.x, c.y, selectedIndex);
+    }
+
+    function forceMagnitudesOnCharges() {
+      const magnitudes = [];
+
+      for (let i = 0; i < charges.length; i++) {
+        const c = charges[i];
+        const field = electricFieldAtPoint(c.x, c.y, i);
+        const fx = c.q * field.ex;
+        const fy = c.q * field.ey;
+        const fMag = Math.hypot(fx, fy);
+
+        if (fMag > 0 && Number.isFinite(fMag)) {
+          magnitudes.push(fMag);
+        }
+      }
+
+      return magnitudes;
+    }
+
+    function addChargeAtPixels(x, y, q) {
+      const clamped = clampChargePosition(x, y);
+      const nearbyIndex = tooCloseChargeIndex(clamped.x, clamped.y);
+
+      if (nearbyIndex !== null) {
+        announce(`Charge not added because it would be inside the contact distance of Charge ${nearbyIndex + 1}.`);
+        return;
+      }
+
+      charges.push(new Charge(clamped.x, clamped.y, q));
+      selectedIndex = null;
+      syncUI();
+      requestDraw();
+      announce(`Added charge ${charges.length}.`);
+    }
+
+    function removeCharge(index) {
+      if (index < 0 || index >= charges.length) return;
+      charges.splice(index, 1);
+
+      if (selectedIndex === index) {
+        selectedIndex = null;
+      } else if (selectedIndex !== null && selectedIndex > index) {
+        selectedIndex -= 1;
+      }
+
+      syncUI();
+      requestDraw();
+      announce("Charge removed.");
+    }
+
+    function selectCharge(index) {
+      if (index === null || index === "" || Number.isNaN(Number(index))) {
+        selectedIndex = null;
+      } else {
+        const nextIndex = Number(index);
+        selectedIndex = nextIndex >= 0 && nextIndex < charges.length ? nextIndex : null;
+      }
+      syncUI();
+      requestDraw();
+      announce(selectedIndex === null ? "Feeler cleared." : `Charge ${selectedIndex + 1} selected as feeler.`);
+    }
+
+    function requestDraw() {
+      needsDraw = true;
+    }
+
+    function drawArrow(x, y, vx, vy, color = "#4b5563", maxLen = ARROW_MAX_LEN) {
       const mag = Math.hypot(vx, vy);
       if (mag < 1e-12) return;
 
-      const scale = Math.min(maxLen / mag, 1.0);
+      const scale = Math.min(maxLen / mag, 1);
       vx *= scale;
       vy *= scale;
 
@@ -230,44 +846,42 @@
 
     function drawDistanceGrid() {
       ctx.lineWidth = 1;
+      ctx.strokeStyle = GRID_MINOR;
 
-      ctx.strokeStyle = "#e8e8ee";
-      for (let x = 0; x < FIELD_W; x += MINOR_GRID_PIXELS) {
+      for (let x = 0; x <= FIELD_W; x += MINOR_GRID_PIXELS) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
-        ctx.lineTo(x, HEIGHT);
+        ctx.lineTo(x, FIELD_H);
         ctx.stroke();
       }
 
-      for (let y = 0; y < HEIGHT; y += MINOR_GRID_PIXELS) {
+      for (let y = 0; y <= FIELD_H; y += MINOR_GRID_PIXELS) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(FIELD_W, y);
         ctx.stroke();
       }
 
-      ctx.strokeStyle = "#cdcdD7";
-      ctx.fillStyle = "#999";
-      ctx.font = "12px Arial";
+      ctx.strokeStyle = GRID_MAJOR;
+      ctx.fillStyle = MUTED_TEXT;
+      ctx.font = "12px system-ui, sans-serif";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
 
-      for (let x = 0; x < FIELD_W; x += MAJOR_GRID_PIXELS) {
+      for (let x = 0; x <= FIELD_W; x += MAJOR_GRID_PIXELS) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
-        ctx.lineTo(x, HEIGHT);
+        ctx.lineTo(x, FIELD_H);
         ctx.stroke();
-
-        const cm = x / PIXELS_PER_CM;
-        ctx.fillText(`${cm.toFixed(0)} cm`, x + 4, 14);
+        ctx.fillText(`${(x / PIXELS_PER_CM).toFixed(0)} cm`, x + 4, 4);
       }
 
-      for (let y = 0; y < HEIGHT; y += MAJOR_GRID_PIXELS) {
+      for (let y = 0; y <= FIELD_H; y += MAJOR_GRID_PIXELS) {
         ctx.beginPath();
         ctx.moveTo(0, y);
         ctx.lineTo(FIELD_W, y);
         ctx.stroke();
-
-        const cm = y / PIXELS_PER_CM;
-        ctx.fillText(`${cm.toFixed(0)} cm`, 4, y + 14);
+        ctx.fillText(`${(y / PIXELS_PER_CM).toFixed(0)} cm`, 4, y + 4);
       }
     }
 
@@ -275,16 +889,8 @@
       const samples = [];
 
       for (let x = GRID_SPACING / 2; x < FIELD_W; x += GRID_SPACING) {
-        for (let y = GRID_SPACING / 2; y < HEIGHT; y += GRID_SPACING) {
-          let tooClose = false;
-
-          for (const c of charges) {
-            if (distance(x, y, c.x, c.y) < 22) {
-              tooClose = true;
-              break;
-            }
-          }
-
+        for (let y = GRID_SPACING / 2; y < FIELD_H; y += GRID_SPACING) {
+          const tooClose = charges.some(c => distance(x, y, c.x, c.y) < 22);
           if (tooClose) continue;
 
           const field = electricFieldAtPoint(x, y, selectedIndex);
@@ -298,230 +904,123 @@
 
       if (samples.length === 0) return;
 
-      const magnitudes = samples.map(s => s.mag).sort((a, b) => a - b);
+      const magnitudes = samples.map(sample => sample.mag).sort((a, b) => a - b);
       const medianMag = magnitudes[Math.floor(magnitudes.length / 2)];
+      if (medianMag <= 0 || !Number.isFinite(medianMag)) return;
 
-      if (medianMag <= 0) return;
-
-      for (const s of samples) {
-        const ux = s.ex / s.mag;
-        const uy = s.ey / s.mag;
-
-        const relativeStrength = s.mag / medianMag;
-        let arrowLen = ARROW_MAX_LEN * (1 - Math.exp(-relativeStrength));
-        arrowLen = Math.max(6, arrowLen);
-
-        drawArrow(s.x, s.y, ux * arrowLen, uy * arrowLen, "#555", ARROW_MAX_LEN);
+      for (const sample of samples) {
+        const ux = sample.ex / sample.mag;
+        const uy = sample.ey / sample.mag;
+        const relativeStrength = sample.mag / medianMag;
+        const arrowLen = Math.max(6, ARROW_MAX_LEN * (1 - Math.exp(-relativeStrength)));
+        drawArrow(sample.x, sample.y, ux * arrowLen, uy * arrowLen, "#4b5563", ARROW_MAX_LEN);
       }
     }
 
     function drawCharges() {
       for (let i = 0; i < charges.length; i++) {
         const c = charges[i];
-
-        let color = "#555";
+        let color = "#4b5563";
         let sign = "0";
 
         if (c.q > 0) {
-          color = "#e65046";
+          color = PRIMARY_BLUE;
           sign = "+";
         } else if (c.q < 0) {
-          color = "#4682e6";
+          color = ERROR_RED;
           sign = "−";
         }
 
         ctx.beginPath();
         ctx.fillStyle = color;
-        ctx.strokeStyle = "#111";
+        ctx.strokeStyle = "#111827";
         ctx.lineWidth = 2;
         ctx.arc(c.x, c.y, CHARGE_RADIUS, 0, 2 * Math.PI);
         ctx.fill();
         ctx.stroke();
 
-        ctx.fillStyle = "white";
-        ctx.font = "24px Arial";
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 24px system-ui, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(sign, c.x, c.y);
+        ctx.fillText(sign, c.x, c.y - 1);
+
+        ctx.fillStyle = TEXT_COLOR;
+        ctx.font = "12px system-ui, sans-serif";
+        ctx.fillText(`${i + 1}`, c.x, c.y + 26);
 
         if (selectedIndex === i) {
           ctx.beginPath();
-          ctx.strokeStyle = "#f5d750";
-          ctx.lineWidth = 3;
-          ctx.arc(c.x, c.y, CHARGE_RADIUS + 7, 0, 2 * Math.PI);
+          ctx.strokeStyle = FOCUS_AMBER;
+          ctx.lineWidth = 4;
+          ctx.arc(c.x, c.y, CHARGE_RADIUS + 8, 0, 2 * Math.PI);
           ctx.stroke();
 
-          ctx.fillStyle = "#111";
-          ctx.font = "13px Arial";
-          ctx.fillText("feeler", c.x, c.y - 28);
+          ctx.fillStyle = TEXT_COLOR;
+          ctx.font = "bold 13px system-ui, sans-serif";
+          ctx.fillText("feeler", c.x, c.y - 30);
         }
       }
-    }
-
-    function forceMagnitudesOnCharges() {
-      const mags = [];
-
-      for (let i = 0; i < charges.length; i++) {
-        const c = charges[i];
-        const field = electricFieldAtPoint(c.x, c.y, i);
-
-        const fx = c.q * field.ex;
-        const fy = c.q * field.ey;
-        const fMag = Math.hypot(fx, fy);
-
-        if (fMag > 0 && Number.isFinite(fMag)) {
-          mags.push(fMag);
-        }
-      }
-
-      return mags;
     }
 
     function drawFeelerForceArrow() {
-      if (selectedIndex === null) return;
-      if (selectedIndex < 0 || selectedIndex >= charges.length) return;
+      if (selectedIndex === null || selectedIndex < 0 || selectedIndex >= charges.length) return;
 
       const c = charges[selectedIndex];
-      const field = electricFieldAtPoint(c.x, c.y, selectedIndex);
+      const field = fieldAtSelectedCharge();
+      if (!field) return;
 
       const fx = c.q * field.ex;
       const fy = c.q * field.ey;
       const fMag = Math.hypot(fx, fy);
-
       if (fMag <= 0 || !Number.isFinite(fMag)) return;
 
+      const forceMags = forceMagnitudesOnCharges().sort((a, b) => a - b);
+      let medianForce = forceMags.length ? forceMags[Math.floor(forceMags.length / 2)] : fMag;
+      if (medianForce <= 0 || !Number.isFinite(medianForce)) medianForce = fMag;
+
+      const relativeStrength = fMag / medianForce;
+      if (relativeStrength < 0.03) return;
+
+      const maxLen = 80;
+      const minLen = 4;
+      const forceLen = Math.min(maxLen, Math.max(minLen, maxLen * (1 - Math.exp(-relativeStrength))));
       const ux = fx / fMag;
       const uy = fy / fMag;
 
-      const forceMags = forceMagnitudesOnCharges().sort((a, b) => a - b);
-      let medianForce = forceMags.length > 0
-        ? forceMags[Math.floor(forceMags.length / 2)]
-        : fMag;
+      drawArrow(c.x, c.y, ux * forceLen, uy * forceLen, SUCCESS_GREEN, maxLen);
 
-      if (medianForce <= 0 || !Number.isFinite(medianForce)) {
-        medianForce = fMag;
-      }
-
-      const relativeStrength = fMag / medianForce;
-
-      const FORCE_ARROW_MAX_LEN = 80;
-      const FORCE_ARROW_MIN_LEN = 4;
-
-      let forceLen = FORCE_ARROW_MAX_LEN * (1 - Math.exp(-relativeStrength));
-
-      if (relativeStrength < 0.03) {
-        return;
-      }
-
-      forceLen = Math.max(FORCE_ARROW_MIN_LEN, forceLen);
-      forceLen = Math.min(FORCE_ARROW_MAX_LEN, forceLen);
-
-      drawArrow(c.x, c.y, ux * forceLen, uy * forceLen, "#3caa5a", FORCE_ARROW_MAX_LEN);
-
-      ctx.fillStyle = "#3caa5a";
-      ctx.font = "20px Arial";
+      ctx.fillStyle = SUCCESS_GREEN;
+      ctx.font = "bold 20px system-ui, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("F", c.x + ux * (forceLen + 12), c.y + uy * (forceLen + 12));
+      ctx.fillText("F", c.x + ux * (forceLen + 13), c.y + uy * (forceLen + 13));
     }
 
-    function updateChargeControls() {
-      const container = document.getElementById("chargeControls");
-      container.innerHTML = "";
-
-      if (charges.length === 0) {
-        container.textContent = "No charges yet.";
-        return;
-      }
-
-      for (let i = 0; i < charges.length; i++) {
-        const row = document.createElement("div");
-        row.className = "charge-row";
-
-        const label = document.createElement("label");
-        label.textContent = `Charge ${i + 1}`;
-        if (i === selectedIndex) {
-          label.className = "selected";
-        }
-
-        const input = document.createElement("input");
-        input.value = formatCharge(charges[i].q);
-
-        input.addEventListener("input", () => {
-          const value = parseCharge(input.value);
-          if (value !== null) {
-            charges[i].q = value;
-          }
-        });
-
-        const button = document.createElement("button");
-        button.textContent = "×";
-
-        button.addEventListener("click", () => {
-          charges.splice(i, 1);
-
-          if (selectedIndex === i) {
-            selectedIndex = null;
-          } else if (selectedIndex !== null && selectedIndex > i) {
-            selectedIndex -= 1;
-          }
-
-          updateChargeControls();
-        });
-
-        row.appendChild(label);
-        row.appendChild(input);
-        row.appendChild(button);
-        container.appendChild(row);
-      }
-    }
-
-    function updateInfo() {
-      const info = document.getElementById("fieldInfo");
-
-      if (selectedIndex === null || selectedIndex < 0 || selectedIndex >= charges.length) {
-        info.innerHTML = "No feeler selected.<br>Click a charge to inspect the field it feels.";
-        return;
-      }
-
-      const c = charges[selectedIndex];
-      const field = electricFieldAtPoint(c.x, c.y, selectedIndex);
-
-      const eMag = Math.hypot(field.ex, field.ey);
-
-      const fx = c.q * field.ex;
-      const fy = c.q * field.ey;
-      const fMag = Math.hypot(fx, fy);
-
-      info.innerHTML = `
-        <strong>Feeler: Charge ${selectedIndex + 1}</strong><br>
-        E = (${field.ex.toExponential(3)}, ${field.ey.toExponential(3)}) N/C<br>
-        |E| = ${eMag.toExponential(3)} N/C<br>
-        F = (${fx.toExponential(3)}, ${fy.toExponential(3)}) N<br>
-        |F| = ${fMag.toExponential(3)} N
-      `;
-    }
-
-    function drawHeader() {
-      ctx.fillStyle = "white";
-      ctx.strokeStyle = "black";
-      ctx.lineWidth = 1;
-
-      roundRect(ctx, 12, 10, 430, 34, 8, true, true);
-
-      ctx.fillStyle = "black";
-      ctx.font = "18px Arial";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-
+    function drawHeaderLabel() {
       const text = selectedIndex === null
         ? "Showing total electric field from all charges"
         : `Showing field felt by Charge ${selectedIndex + 1} only`;
 
-      ctx.fillText(text, 24, 27);
+      ctx.font = "16px system-ui, sans-serif";
+      const paddingX = 12;
+      const boxHeight = 36;
+      const boxWidth = Math.min(435, ctx.measureText(text).width + 2 * paddingX);
+      const boxX = FIELD_W - boxWidth - 12;
+      const boxY = FIELD_H - boxHeight - 12;
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.94)";
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1;
+      roundRect(boxX, boxY, boxWidth, boxHeight, 8, true, true);
+
+      ctx.fillStyle = TEXT_COLOR;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, boxX + paddingX, boxY + boxHeight / 2);
     }
 
-    function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+    function roundRect(x, y, w, h, r, fill, stroke) {
       ctx.beginPath();
       ctx.moveTo(x + r, y);
       ctx.lineTo(x + w - r, y);
@@ -533,15 +1032,162 @@
       ctx.lineTo(x, y + r);
       ctx.quadraticCurveTo(x, y, x + r, y);
       ctx.closePath();
-
       if (fill) ctx.fill();
       if (stroke) ctx.stroke();
     }
 
+    function drawScene() {
+      ctx.clearRect(0, 0, FIELD_W, FIELD_H);
+      ctx.fillStyle = FIELD_BG;
+      ctx.fillRect(0, 0, FIELD_W, FIELD_H);
+      drawDistanceGrid();
+      drawFieldArrows();
+      drawCharges();
+      drawFeelerForceArrow();
+      drawHeaderLabel();
+      needsDraw = false;
+    }
+
+    function syncUI() {
+      syncChargeTable();
+      syncSelectedDropdown();
+      updateReadouts();
+    }
+
+    function syncChargeTable() {
+      chargeTableBody.innerHTML = "";
+
+      if (charges.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 4;
+        cell.textContent = "No charges yet.";
+        row.appendChild(cell);
+        chargeTableBody.appendChild(row);
+        return;
+      }
+
+      charges.forEach((charge, index) => {
+        const row = document.createElement("tr");
+        if (selectedIndex === index) row.classList.add("selected-row");
+
+        const labelCell = document.createElement("td");
+        labelCell.innerHTML = `<strong>Charge ${index + 1}</strong><br><span class="status-pill">${selectedIndex === index ? "feeler" : charge.q > 0 ? "positive" : charge.q < 0 ? "negative" : "zero"}</span>`;
+
+        const inputCell = document.createElement("td");
+        const input = document.createElement("input");
+        input.className = "charge-input";
+        input.type = "text";
+        input.inputMode = "decimal";
+        input.value = formatCharge(charge.q);
+        input.setAttribute("aria-label", `Charge ${index + 1} value in coulombs`);
+        input.addEventListener("input", () => {
+          const value = parseCharge(input.value);
+          if (value !== null) {
+            charge.q = value;
+            requestDraw();
+            updateReadouts();
+          }
+        });
+        input.addEventListener("blur", () => {
+          const value = parseCharge(input.value);
+          input.value = value === null ? formatCharge(charge.q) : formatCharge(value);
+          syncUI();
+          requestDraw();
+        });
+        inputCell.appendChild(input);
+
+        const positionCell = document.createElement("td");
+        positionCell.textContent = `x = ${pixelsToCm(charge.x).toFixed(1)} cm, y = ${pixelsToCm(charge.y).toFixed(1)} cm`;
+
+        const actionCell = document.createElement("td");
+        const selectButton = document.createElement("button");
+        selectButton.type = "button";
+        selectButton.className = "secondary small";
+        selectButton.textContent = selectedIndex === index ? "Clear" : "Select";
+        selectButton.addEventListener("click", () => {
+          selectCharge(selectedIndex === index ? null : index);
+        });
+
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.className = "danger small";
+        removeButton.textContent = "Remove";
+        removeButton.addEventListener("click", () => removeCharge(index));
+
+        actionCell.append(selectButton, " ", removeButton);
+        row.append(labelCell, inputCell, positionCell, actionCell);
+        chargeTableBody.appendChild(row);
+      });
+    }
+
+    function syncSelectedDropdown() {
+      selectedChargeSelect.innerHTML = "";
+      const noneOption = document.createElement("option");
+      noneOption.value = "";
+      noneOption.textContent = "No feeler selected";
+      selectedChargeSelect.appendChild(noneOption);
+
+      charges.forEach((_, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = `Charge ${index + 1}`;
+        selectedChargeSelect.appendChild(option);
+      });
+
+      selectedChargeSelect.value = selectedIndex === null ? "" : String(selectedIndex);
+    }
+
+    function updateReadouts() {
+      if (selectedIndex === null || selectedIndex < 0 || selectedIndex >= charges.length) {
+        modeReadout.textContent = "Showing total electric field from all charges.";
+        feelerReadout.textContent = "No feeler selected.";
+        fieldReadout.textContent = "No feeler selected.";
+        forceReadout.textContent = "No feeler selected.";
+        return;
+      }
+
+      const charge = charges[selectedIndex];
+      const field = fieldAtSelectedCharge();
+      const eMag = Math.hypot(field.ex, field.ey);
+      const fx = charge.q * field.ex;
+      const fy = charge.q * field.ey;
+      const fMag = Math.hypot(fx, fy);
+
+      modeReadout.textContent = `Showing the electric field at Charge ${selectedIndex + 1} caused by all other charges.`;
+      feelerReadout.textContent = `Charge ${selectedIndex + 1}: q = ${formatCharge(charge.q)} C, x = ${pixelsToCm(charge.x).toFixed(1)} cm, y = ${pixelsToCm(charge.y).toFixed(1)} cm.`;
+      fieldReadout.textContent = `E = (${formatNumber(field.ex)}, ${formatNumber(field.ey)}) N/C; |E| = ${formatNumber(eMag)} N/C.`;
+      forceReadout.textContent = `F = (${formatNumber(fx)}, ${formatNumber(fy)}) N; |F| = ${formatNumber(fMag)} N.`;
+    }
+
+    function nudgeSelected(dx, dy) {
+      if (selectedIndex === null || selectedIndex < 0 || selectedIndex >= charges.length) {
+        announce("No charge is selected to move.");
+        return;
+      }
+
+      const charge = charges[selectedIndex];
+      const clamped = constrainChargePosition(charge.x + dx, charge.y + dy, selectedIndex);
+      charge.x = clamped.x;
+      charge.y = clamped.y;
+      syncUI();
+      requestDraw();
+      announce(`Moved Charge ${selectedIndex + 1}.`);
+    }
+
+    function getDefaultChargeValue() {
+      const value = parseCharge(defaultChargeInput.value);
+      if (value !== null) return value;
+      defaultChargeInput.value = formatCharge(E_CHARGE);
+      return E_CHARGE;
+    }
+
     canvas.addEventListener("mousedown", event => {
       const rect = canvas.getBoundingClientRect();
-      const mx = event.clientX - rect.left;
-      const my = event.clientY - rect.top;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mx = (event.clientX - rect.left) * scaleX;
+      const my = (event.clientY - rect.top) * scaleY;
 
       mouseDownX = mx;
       mouseDownY = my;
@@ -552,70 +1198,135 @@
       if (clickedChargeIndex !== null) {
         selectedIndex = clickedChargeIndex;
         draggingIndex = clickedChargeIndex;
-
         const c = charges[draggingIndex];
         dragOffsetX = c.x - mx;
         dragOffsetY = c.y - my;
-
-        updateChargeControls();
+        syncUI();
+        requestDraw();
+        announce(`Charge ${selectedIndex + 1} selected as feeler.`);
       } else {
-        charges.push(new Charge(mx, my, E_CHARGE));
-        selectedIndex = null;
-        updateChargeControls();
+        addChargeAtPixels(mx, my, getDefaultChargeValue());
       }
     });
 
     canvas.addEventListener("mousemove", event => {
-        if (draggingIndex === null) return;
+      if (draggingIndex === null) return;
 
-        const rect = canvas.getBoundingClientRect();
-        const mx = event.clientX - rect.left;
-        const my = event.clientY - rect.top;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const mx = (event.clientX - rect.left) * scaleX;
+      const my = (event.clientY - rect.top) * scaleY;
 
-        if (Math.hypot(mx - mouseDownX, my - mouseDownY) > DRAG_THRESHOLD) {
-            didDrag = true;
+      if (Math.hypot(mx - mouseDownX, my - mouseDownY) > DRAG_THRESHOLD) {
+        didDrag = true;
+      }
+
+      const c = charges[draggingIndex];
+      const clamped = constrainChargePosition(mx + dragOffsetX, my + dragOffsetY, draggingIndex);
+      c.x = clamped.x;
+      c.y = clamped.y;
+      updateReadouts();
+      requestDraw();
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (draggingIndex !== null) {
+        if (didDrag) {
+          selectedIndex = null;
+          announce("Charge moved. Feeler cleared.");
         }
+        draggingIndex = null;
+        didDrag = false;
+        syncUI();
+        requestDraw();
+      }
+    });
 
-        let newX = mx + dragOffsetX;
-        let newY = my + dragOffsetY;
+    canvas.addEventListener("keydown", event => {
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+        event.preventDefault();
+        const step = event.shiftKey ? 20 : 5;
+        const moves = {
+          ArrowUp: [0, -step],
+          ArrowDown: [0, step],
+          ArrowLeft: [-step, 0],
+          ArrowRight: [step, 0]
+        };
+        const [dx, dy] = moves[event.key];
+        nudgeSelected(dx, dy);
+      }
 
-        const clamped = clampChargePosition(newX, newY);
+      if (event.key.toLowerCase() === "a") {
+        event.preventDefault();
+        addChargeAtPixels(FIELD_W / 2, FIELD_H / 2, getDefaultChargeValue());
+      }
 
-        charges[draggingIndex].x = clamped.x;
-        charges[draggingIndex].y = clamped.y;
-        });
+      if (event.key === "Escape") {
+        event.preventDefault();
+        selectCharge(null);
+      }
+    });
 
-        window.addEventListener("mouseup", () => {
-            if (draggingIndex !== null) {
-                if (didDrag) {
-                selectedIndex = null;
-                updateChargeControls();
-                }
+    document.getElementById("add-charge-button").addEventListener("click", () => {
+      const xCm = Number(addXCmInput.value);
+      const yCm = Number(addYCmInput.value);
+      const x = Number.isFinite(xCm) ? cmToPixels(xCm) : FIELD_W / 2;
+      const y = Number.isFinite(yCm) ? cmToPixels(yCm) : FIELD_H / 2;
+      addChargeAtPixels(x, y, getDefaultChargeValue());
+    });
 
-                draggingIndex = null;
-                didDrag = false;
-            }
-            });
+    document.getElementById("add-center-button").addEventListener("click", () => {
+      addChargeAtPixels(FIELD_W / 2, FIELD_H / 2, getDefaultChargeValue());
+    });
 
-    function loop() {
-      ctx.clearRect(0, 0, FIELD_W, HEIGHT);
+    chargePresetSelect.addEventListener("change", () => {
+      defaultChargeInput.value = chargePresetSelect.value;
+    });
 
-      ctx.fillStyle = "#fafaff";
-      ctx.fillRect(0, 0, FIELD_W, HEIGHT);
+    document.getElementById("clear-selection-button").addEventListener("click", () => selectCharge(null));
 
-      drawDistanceGrid();
-      drawFieldArrows();
-      drawCharges();
-      drawFeelerForceArrow();
-      drawHeader();
+    document.getElementById("reset-button").addEventListener("click", () => {
+      charges = [];
+      selectedIndex = null;
+      draggingIndex = null;
+      syncUI();
+      requestDraw();
+      announce("All charges removed.");
+    });
 
-      updateInfo();
+    pauseButton.addEventListener("click", () => {
+      redrawPaused = !redrawPaused;
+      pauseButton.textContent = redrawPaused ? "Resume redraw" : "Pause redraw";
+      announce(redrawPaused ? "Canvas redraw paused." : "Canvas redraw resumed.");
+      requestDraw();
+    });
 
-      requestAnimationFrame(loop);
+    document.getElementById("step-button").addEventListener("click", () => {
+      drawScene();
+      syncUI();
+      announce("Advanced one drawing step.");
+    });
+
+    selectedChargeSelect.addEventListener("change", () => selectCharge(selectedChargeSelect.value));
+
+    document.querySelectorAll("[data-nudge]").forEach(button => {
+      button.addEventListener("click", () => {
+        const [dx, dy] = button.dataset.nudge.split(",").map(Number);
+        nudgeSelected(dx, dy);
+      });
+    });
+
+    function animationLoop() {
+      if (!redrawPaused && needsDraw) {
+        drawScene();
+      }
+      requestAnimationFrame(animationLoop);
     }
 
-    updateChargeControls();
-    loop();
+    syncUI();
+    requestDraw();
+    animationLoop();
   </script>
 </body>
 </html>
