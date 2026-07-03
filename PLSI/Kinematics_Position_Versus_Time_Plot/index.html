@@ -6,61 +6,112 @@
   <title>Accessible Position vs. Time Slope Explorer</title>
   <style>
     :root {
-      --bg: #f4f4f4;
+      --bg: #f7f7fb;
       --panel: #ffffff;
-      --text: #222222;
-      --muted: #555555;
-      --border: #9a9a9a;
-      --curve: #125a9c;
-      --tangent: #a84600;
-      --active: #d8ebff;
-      --focus: #000000;
-      --success-bg: #eef8ee;
-      --warn-bg: #fff6df;
+      --text: #1f2937;
+      --muted: #4b5563;
+      --border: #cbd5e1;
+      --accent: #1d4ed8;
+      --accent-dark: #1e40af;
+      --curve: #1d4ed8;
+      --tangent: #b45309;
+      --active: #eff6ff;
+      --focus: #f59e0b;
+      --success-bg: #f0fdf4;
+      --warn-bg: #fffbeb;
+      --canvas-bg: #ffffff;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.45;
+      line-height: 1.5;
+    }
+
+    header {
+      background: #111827;
+      color: white;
+      padding: 1.25rem;
+      border-radius: 0;
+      margin: 0;
+    }
+
+    header h1 {
+      margin: 0 0 0.35rem 0;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      line-height: 1.1;
+    }
+
+    header .subtitle {
+      margin: 0;
+      max-width: 70rem;
+      color: #e5e7eb;
     }
 
     .page {
-      max-width: 1160px;
-      margin: 0 auto;
-      padding: 20px;
+      width: min(1200px, calc(100% - 2rem));
+      max-width: none;
+      margin: 1rem auto 2rem auto;
+      padding: 0;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    section,
+    aside,
+    .canvas-wrap,
+    .info-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.2;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      margin: 0 0 0.75rem 0;
+    }
+
+    h3 {
+      font-size: 1.08rem;
+      margin: 1rem 0 0.5rem 0;
+    }
+
+    p {
+      margin-top: 0;
     }
 
     .skip-link {
       position: absolute;
-      left: -999px;
-      top: auto;
-      width: 1px;
-      height: 1px;
-      overflow: hidden;
+      left: 0.5rem;
+      top: -100px;
+      background: white;
+      color: black;
+      padding: 0.5rem;
+      border: 2px solid black;
+      z-index: 1000;
     }
 
     .skip-link:focus {
-      left: 16px;
-      top: 16px;
-      width: auto;
-      height: auto;
-      z-index: 1000;
-      padding: 10px 14px;
-      background: white;
-      border: 3px solid var(--focus);
-      color: var(--text);
+      top: 0.5rem;
     }
-
-    h1 { margin: 0 0 6px 0; font-size: 1.8rem; }
-    h2 { font-size: 1.25rem; margin: 0 0 10px 0; }
-    h3 { font-size: 1.05rem; margin: 14px 0 8px 0; }
-
-    .subtitle { margin: 0 0 16px 0; color: var(--muted); }
 
     .sr-only {
       position: absolute;
@@ -74,35 +125,21 @@
       border: 0;
     }
 
-    .control-panel,
-    .instructions,
-    .accessibility-note,
-    .graph-summary,
-    .data-panel {
-      background: var(--panel);
+    fieldset.control-group {
       border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 15px;
-      margin-bottom: 16px;
+      border-radius: 0.5rem;
+      padding: 0.85rem;
+      margin: 0 0 1rem 0;
     }
 
-    .control-group {
-      border: 0;
-      padding: 0;
-      margin: 0 0 14px 0;
+    fieldset.control-group legend {
+      font-weight: 700;
+      padding: 0 0.25rem;
+      margin-bottom: 0;
     }
 
-    .control-group legend {
-      font-weight: bold;
-      margin-bottom: 8px;
-    }
-
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 8px;
-      align-items: center;
+    label {
+      font-weight: 650;
     }
 
     button,
@@ -112,21 +149,36 @@
     }
 
     button {
-      padding: 8px 12px;
-      border: 1px solid #555;
-      border-radius: 5px;
-      background: white;
-      color: var(--text);
+      border: 1px solid var(--accent-dark);
+      background: var(--accent);
+      color: white;
+      padding: 0.55rem 0.85rem;
+      border-radius: 0.45rem;
       cursor: pointer;
+      font-weight: 700;
     }
 
-    button:hover { background: #eeeeee; }
+    button:hover {
+      background: var(--accent-dark);
+    }
+
+    .graph-controls button,
+    #zeroCustomBtn {
+      background: white;
+      color: var(--accent-dark);
+    }
+
+    .graph-controls button:hover,
+    #zeroCustomBtn:hover {
+      background: #eff6ff;
+    }
 
     button.active,
     button[aria-pressed="true"] {
       background: var(--active);
-      border-color: var(--curve);
-      box-shadow: inset 0 0 0 2px var(--curve);
+      color: var(--accent-dark);
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 2px var(--accent);
     }
 
     button:focus-visible,
@@ -134,90 +186,118 @@
     canvas:focus-visible,
     summary:focus-visible {
       outline: 3px solid var(--focus);
-      outline-offset: 3px;
+      outline-offset: 2px;
+    }
+
+    input[type="number"] {
+      padding: 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 0.4rem;
+      background: white;
+      color: var(--text);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      min-height: 36px;
+      accent-color: var(--accent);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      align-items: center;
+    }
+
+    .graph-controls {
+      align-items: stretch;
     }
 
     .custom-panel {
       display: none;
       align-items: center;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 10px;
-      padding: 10px;
-      background: #fafafa;
+      gap: 0.5rem;
+      margin: 0 0 1rem 0;
+      padding: 0.85rem;
+      background: #f8fafc;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 0.5rem;
     }
 
-    .custom-panel.visible { display: flex; }
+    .custom-panel.visible {
+      display: flex;
+    }
 
     .custom-panel label {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
+      gap: 0.25rem;
     }
 
     .custom-panel input {
-      width: 78px;
-      padding: 6px;
-      border: 1px solid #777;
-      border-radius: 4px;
+      width: 5.25rem;
     }
 
     .equation-preview {
       width: 100%;
-      margin-top: 4px;
+      margin-top: 0.25rem;
       color: var(--muted);
-      font-family: "Courier New", Courier, monospace;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       font-size: 0.95rem;
     }
 
     .time-control {
       display: grid;
       grid-template-columns: minmax(160px, 1fr) auto;
-      gap: 8px 12px;
+      gap: 0.5rem 0.75rem;
       align-items: center;
       max-width: 760px;
     }
 
-    .time-control label { font-weight: bold; }
-
-    .time-control input[type="range"] {
-      width: 100%;
-      min-height: 36px;
+    .time-control label {
+      font-weight: 700;
     }
 
     .main-area {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      align-items: flex-start;
-      margin-bottom: 16px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+      align-items: start;
+      margin-bottom: 0;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      padding: 0;
+    }
+
+    @media (min-width: 950px) {
+      .main-area {
+        grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+      }
     }
 
     .canvas-wrap {
-      flex: 1 1 760px;
-      min-width: 280px;
+      min-width: 0;
+      overflow: auto;
     }
 
     canvas {
-      width: 760px;
-      max-width: 100%;
+      width: 100%;
+      max-width: 760px;
       height: auto;
-      background: white;
+      background: var(--canvas-bg);
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 0.5rem;
       touch-action: none;
       display: block;
+      margin: 0 auto;
     }
 
     .info-panel {
-      flex: 1 1 310px;
-      min-width: 280px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 15px;
+      min-width: 0;
     }
 
     .readout {
@@ -226,71 +306,88 @@
     }
 
     .value {
-      font-family: "Courier New", Courier, monospace;
-      font-weight: bold;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-weight: 800;
     }
 
-    .concept-box {
-      margin-top: 15px;
-      padding: 10px;
-      border-left: 4px solid #555;
-      background: #f7f7f7;
+    .concept-box,
+    .graph-summary,
+    .small-note#canvasDescription {
+      border-left: 5px solid var(--accent);
+      background: #eff6ff;
+      padding: 0.75rem;
+      border-radius: 0.45rem;
+      margin-top: 1rem;
     }
 
     .keyboard-help {
-      margin-top: 12px;
-      padding: 10px;
+      margin-top: 1rem;
+      padding: 0.75rem;
       background: var(--warn-bg);
-      border: 1px solid #d3b36a;
-      border-radius: 6px;
+      border: 1px solid #fcd34d;
+      border-radius: 0.5rem;
+      color: #92400e;
     }
 
     .accessibility-note {
       background: var(--success-bg);
+      border-color: #86efac;
     }
 
-    .small-note { margin-top: 14px; color: var(--muted); font-size: 0.92rem; }
+    .small-note {
+      margin-top: 0.75rem;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
 
     table {
       border-collapse: collapse;
       width: 100%;
-      margin-top: 8px;
+      margin-top: 0.5rem;
       background: white;
+      font-size: 0.95rem;
     }
 
-    th, td {
-      border: 1px solid #b8b8b8;
-      padding: 6px 8px;
+    th,
+    td {
+      border: 1px solid var(--border);
+      padding: 0.5rem;
       text-align: right;
+      vertical-align: top;
     }
 
     th {
-      background: #eeeeee;
+      background: #f1f5f9;
       text-align: center;
     }
 
     td:first-child,
-    td:last-child { text-align: center; }
+    td:last-child {
+      text-align: center;
+    }
 
     details summary {
       cursor: pointer;
-      font-weight: bold;
+      font-weight: 700;
     }
 
     @media (prefers-reduced-motion: reduce) {
-      html:focus-within { scroll-behavior: auto; }
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+      }
     }
-  </style>
+</style>
 </head>
 <body>
-  <a class="skip-link" href="#controls-heading">Skip to graph controls</a>
-  <div class="page">
-    <header>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header>
       <h1>Position vs. Time Slope Explorer</h1>
       <p class="subtitle">Explore how the slope of a position-versus-time graph represents velocity.</p>
-    </header>
+  </header>
 
-    <main>
+  <main id="main" class="page">
       <section class="instructions" aria-labelledby="instructions-heading">
         <h2 id="instructions-heading">How to use</h2>
         <p>
@@ -402,17 +499,8 @@
         </details>
       </section>
 
-      <section class="accessibility-note" aria-labelledby="accessibility-heading">
-        <h2 id="accessibility-heading">Accessibility features</h2>
-        <p>
-          This version keeps the visual graph, but it also provides keyboard controls, numeric readouts,
-          a text summary of the graph, and a data table. The graph can be used without clicking or dragging on the canvas.
-        </p>
-      </section>
-
       <div id="liveStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
-    </main>
-  </div>
+  </main>
 
   <script>
     const canvas = document.getElementById("graphCanvas");
