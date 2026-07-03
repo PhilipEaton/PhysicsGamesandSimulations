@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Polarization in Conductors and Insulators</title>
+  <style>
+    :root {
+      --page-bg: #eef2f7;
+      --panel-bg: #ffffff;
+      --text: #172033;
+      --muted-text: #58657a;
+      --border: #d7deea;
+      --primary-blue: #2563eb;
+      --primary-blue-dark: #1e40af;
+      --success-green: #15803d;
+      --warning-amber: #d97706;
+      --error-red: #dc2626;
+      --focus-amber: #f59e0b;
+      --header-bg: #111827;
+      --soft-blue: #dbeafe;
+      --soft-red: #fee2e2;
+      --soft-yellow: #fef3c7;
+      --canvas-bg: #f8fafc;
+      --shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--page-bg);
+    }
+
+    a {
+      color: var(--primary-blue-dark);
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 1rem;
+      top: 0.5rem;
+      transform: translateY(-150%);
+      background: var(--panel-bg);
+      color: var(--primary-blue-dark);
+      padding: 0.6rem 0.8rem;
+      border-radius: 0.5rem;
+      border: 2px solid var(--focus-amber);
+      z-index: 100;
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    header {
+      background: var(--header-bg);
+      color: white;
+      padding: 1.75rem 1rem;
+    }
+
+    .header-inner,
+    main {
+      max-width: 1220px;
+      margin: 0 auto;
+    }
+
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      letter-spacing: -0.03em;
+    }
+
+    header p {
+      margin: 0;
+      max-width: 78ch;
+      color: #d1d5db;
+      font-size: 1.05rem;
+    }
+
+    main {
+      padding: 1rem;
+    }
+
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h2,
+    .card h3 {
+      margin-top: 0;
+      line-height: 1.2;
+    }
+
+    .card h2 {
+      font-size: 1.35rem;
+    }
+
+    .card h3 {
+      font-size: 1.12rem;
+    }
+
+    .controls-under {
+      display: grid;
+      grid-template-columns: minmax(180px, 0.5fr) minmax(340px, 1fr) minmax(260px, 0.8fr);
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    @media (max-width: 860px) {
+      .controls-under {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .charge-stack {
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .position-control-grid {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(190px, 0.85fr);
+      gap: 0.85rem;
+      align-items: center;
+    }
+
+    @media (max-width: 620px) {
+      .position-control-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    fieldset {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.85rem;
+      margin: 0 0 1rem;
+    }
+
+    legend {
+      font-weight: 700;
+      padding: 0 0.35rem;
+    }
+
+    label {
+      font-weight: 650;
+      display: block;
+      margin-bottom: 0.35rem;
+    }
+
+    .radio-row,
+    .button-row,
+    .slider-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: center;
+    }
+
+    .radio-option {
+      display: inline-flex;
+      gap: 0.35rem;
+      align-items: center;
+      padding: 0.35rem 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #f8fafc;
+      font-weight: 650;
+    }
+
+    .control-group {
+      margin-bottom: 1rem;
+    }
+
+    input[type="range"] {
+      width: min(100%, 330px);
+      accent-color: var(--primary-blue);
+    }
+
+    output {
+      font-weight: 700;
+      color: var(--primary-blue-dark);
+      min-width: 5.5rem;
+      display: inline-block;
+    }
+
+    button {
+      font: inherit;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 0.58rem 0.85rem;
+      border: 1px solid var(--primary-blue);
+      cursor: pointer;
+      transition: transform 0.08s ease, background 0.15s ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .primary {
+      background: var(--primary-blue);
+      color: white;
+    }
+
+    .primary:hover {
+      background: var(--primary-blue-dark);
+    }
+
+    .secondary {
+      background: white;
+      color: var(--primary-blue-dark);
+    }
+
+    .secondary:hover {
+      background: var(--soft-blue);
+    }
+
+    .danger {
+      background: var(--error-red);
+      color: white;
+      border-color: var(--error-red);
+    }
+
+    .danger:hover {
+      background: #991b1b;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    .radio-option:focus-within {
+      outline: 3px solid var(--focus-amber);
+      outline-offset: 3px;
+    }
+
+    .note {
+      color: var(--muted-text);
+      font-size: 0.95rem;
+    }
+
+    .sim-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    @media (max-width: 760px) {
+      .sim-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .sim-panel {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: #fbfdff;
+      overflow: hidden;
+    }
+
+    .sim-heading {
+      padding: 0.8rem 0.9rem;
+      border-bottom: 1px solid var(--border);
+      background: #f1f5f9;
+    }
+
+    .sim-heading h3 {
+      margin: 0 0 0.15rem;
+    }
+
+    .sim-heading p {
+      margin: 0;
+      color: var(--muted-text);
+      font-size: 0.92rem;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: var(--canvas-bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .canvas-fallback {
+      padding: 0.8rem;
+      font-size: 0.92rem;
+      color: var(--muted-text);
+    }
+
+    .side-indicators {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      padding: 0.75rem;
+    }
+
+    .indicator {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.65rem;
+      background: white;
+    }
+
+    .indicator strong {
+      display: block;
+      margin-bottom: 0.18rem;
+    }
+
+    .indicator .charge-tag {
+      display: inline;
+      margin-top: 0;
+      border-radius: 999px;
+      padding: 0.15rem 0.45rem;
+      font-size: 0.86rem;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
+    .negative-tag {
+      color: #991b1b;
+      background: var(--soft-red);
+      border: 1px solid #fecaca;
+    }
+
+    .positive-tag {
+      color: #0f3a8c;
+      background: var(--soft-blue);
+      border: 1px solid #93c5fd;
+    }
+
+    .neutral-tag {
+      color: #475569;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+    }
+
+
+    .polarity-indicators {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      padding: 0.75rem;
+    }
+
+    .polarity-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.65rem;
+      background: white;
+      min-height: 4.8rem;
+    }
+
+    .polarity-card strong {
+      display: block;
+      font-size: 0.92rem;
+      color: var(--muted-text);
+      margin-bottom: 0.35rem;
+    }
+
+    .polarity-description {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 0.18rem 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 750;
+      line-height: 1.3;
+    }
+
+    .positive-description {
+      color: #0f3a8c;
+      background: var(--soft-blue);
+      border: 1px solid #93c5fd;
+    }
+
+    .negative-description {
+      color: #991b1b;
+      background: var(--soft-red);
+      border: 1px solid #fecaca;
+    }
+
+    .neutral-description {
+      color: #475569;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+    }
+
+    .kbd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      padding: 0.08rem 0.32rem;
+      background: white;
+      color: var(--text);
+      font-size: 0.9em;
+      white-space: nowrap;
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    ul {
+      padding-left: 1.3rem;
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header>
+    <div class="header-inner">
+      <h1>Polarization in a Conductor and an Insulator</h1>
+      <p>
+        Compare how a charged rod polarizes a neutral conductor and a neutral insulator when only electrons are allowed to move.
+      </p>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="card" aria-labelledby="how-to-use-heading">
+      <h2 id="how-to-use-heading">How to use</h2>
+      <p>
+        Choose whether the rod is positive or negative, then move the rod closer using the distance slider or the animation controls.
+        The left simulation shows mobile electrons redistributing in a conductor. The right simulation shows bound electrons shifting slightly around fixed positive centers in an insulator.
+      </p>
+      <p>
+        Keyboard options: use <span class="kbd">Tab</span> to reach the controls, arrow keys to change sliders and radio buttons,
+        <span class="kbd">Space</span> to play or pause, <span class="kbd">.</span> to step closer, and <span class="kbd">,</span> to step farther.
+      </p>
+    </section>
+
+
+    <section class="card" aria-labelledby="controls-heading">
+      <h2 id="controls-heading">Controls</h2>
+      <div class="controls-under">
+        <fieldset>
+          <legend>Rod charge</legend>
+          <div class="charge-stack" role="radiogroup" aria-label="Rod charge">
+            <label class="radio-option">
+              <input type="radio" name="rodCharge" value="positive" checked>
+              Positive rod
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="rodCharge" value="negative">
+              Negative rod
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Rod position</legend>
+          <div class="position-control-grid">
+            <div>
+              <label for="distanceSlider">Distance from rod to neutral object</label>
+              <div class="slider-row">
+                <input id="distanceSlider" type="range" min="0" max="100" value="72" step="1">
+                <output id="distanceOutput" for="distanceSlider">72%</output>
+              </div>
+            </div>
+            <p class="note">
+              Smaller values mean the rod is closer, so the polarization effect is stronger.
+            </p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Animation</legend>
+          <div class="button-row">
+            <button id="playPauseButton" class="primary" type="button">Play</button>
+            <button id="stepCloserButton" class="secondary" type="button">Step closer</button>
+            <button id="stepFartherButton" class="secondary" type="button">Step farther</button>
+          </div>
+        </fieldset>
+      </div>
+    </section>
+    
+    <section class="card" aria-labelledby="visualization-heading">
+      <h2 id="visualization-heading">Interactive field region</h2>
+      <div class="sim-grid">
+        <article class="sim-panel" aria-labelledby="conductor-heading">
+          <div class="sim-heading">
+            <h3 id="conductor-heading">Neutral conductor</h3>
+            <p>Mobile electrons redistribute through the conductor.</p>
+          </div>
+          <canvas id="conductorCanvas" width="540" height="380" aria-describedby="conductorCanvasDescription">
+            Canvas is not supported in this browser. A charged rod approaches a neutral conductor, causing mobile electrons to redistribute while the fixed positive charges remain in place.
+          </canvas>
+          <p id="conductorCanvasDescription" class="canvas-fallback visually-hidden">
+            A charged rod approaches a neutral conductor. Fixed positive charges remain in place while mobile electrons shift slightly toward or away from the rod, depending on the rod charge.
+          </p>
+          <div class="polarity-indicators" aria-label="Conductor side polarization indicators">
+            <div class="polarity-card">
+              <div>
+                <strong>Near side</strong>
+                <span id="conductorNearSymbol" class="polarity-description negative-description">Electron excess: negative charge</span>
+              </div>
+            </div>
+            <div class="polarity-card">
+              <div>
+                <strong>Far side</strong>
+                <span id="conductorFarSymbol" class="polarity-description positive-description">Electron deficit: positive charge</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="sim-panel" aria-labelledby="insulator-heading">
+          <div class="sim-heading">
+            <h3 id="insulator-heading">Neutral insulator</h3>
+            <p>Bound electrons shift slightly around fixed positive centers.</p>
+          </div>
+          <canvas id="insulatorCanvas" width="540" height="380" aria-describedby="insulatorCanvasDescription">
+            Canvas is not supported in this browser. A charged rod approaches a neutral insulator, causing bound electrons to shift slightly around fixed positive centers.
+          </canvas>
+          <p id="insulatorCanvasDescription" class="canvas-fallback visually-hidden">
+            A charged rod approaches a neutral insulator. Each fixed positive center stays in place while its bound electron marker shifts slightly to the opposite side of that center.
+          </p>
+          <div class="polarity-indicators" aria-label="Insulator side polarization indicators">
+            <div class="polarity-card">
+              <div>
+                <strong>Near side</strong>
+                <span id="insulatorNearSymbol" class="polarity-description negative-description">Electron excess: negative charge</span>
+              </div>
+            </div>
+            <div class="polarity-card">
+              <div>
+                <strong>Far side</strong>
+                <span id="insulatorFarSymbol" class="polarity-description positive-description">Electron deficit: positive charge</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const conductorCanvas = document.getElementById("conductorCanvas");
+    const insulatorCanvas = document.getElementById("insulatorCanvas");
+    const conductorCtx = conductorCanvas.getContext("2d");
+    const insulatorCtx = insulatorCanvas.getContext("2d");
+
+    const distanceSlider = document.getElementById("distanceSlider");
+    const distanceOutput = document.getElementById("distanceOutput");
+    const playPauseButton = document.getElementById("playPauseButton");
+    const stepCloserButton = document.getElementById("stepCloserButton");
+    const stepFartherButton = document.getElementById("stepFartherButton");
+
+    const rodChargeInputs = Array.from(document.querySelectorAll("input[name='rodCharge']"));
+
+    const conductorNearSymbol = document.getElementById("conductorNearSymbol");
+    const conductorFarSymbol = document.getElementById("conductorFarSymbol");
+    const insulatorNearSymbol = document.getElementById("insulatorNearSymbol");
+    const insulatorFarSymbol = document.getElementById("insulatorFarSymbol");
+
+
+    const colors = {
+      text: "#172033",
+      muted: "#58657a",
+      border: "#d7deea",
+      blue: "#2563eb",
+      blueDark: "#1e40af",
+      red: "#dc2626",
+      redDark: "#991b1b",
+      green: "#15803d",
+      amber: "#d97706",
+      conductorFill: "#e5e7eb",
+      conductorStroke: "#64748b",
+      insulatorFill: "#fef3c7",
+      insulatorStroke: "#b45309",
+      rodPositive: "#2563eb",
+      rodNegative: "#dc2626",
+      electron: "#dc2626",
+      positive: "#2563eb"
+    };
+
+    let isPlaying = false;
+    let animationId = null;
+    let lastFrameTime = null;
+    let direction = -1;
+    let animatedDistance = Number(distanceSlider.value);
+    const animationSpeed = 15;
+
+    const conductorElectronSeeds = [
+      { x: 0.20, y: 0.24 }, { x: 0.40, y: 0.24 }, { x: 0.60, y: 0.24 }, { x: 0.80, y: 0.24 },
+      { x: 0.27, y: 0.42 }, { x: 0.50, y: 0.42 }, { x: 0.73, y: 0.42 },
+      { x: 0.20, y: 0.60 }, { x: 0.40, y: 0.60 }, { x: 0.60, y: 0.60 }, { x: 0.80, y: 0.60 },
+      { x: 0.30, y: 0.78 }, { x: 0.50, y: 0.78 }, { x: 0.70, y: 0.78 }
+    ];
+
+    const conductorPositiveSeeds = [
+      { x: 0.18, y: 0.28 }, { x: 0.36, y: 0.28 }, { x: 0.54, y: 0.28 }, { x: 0.72, y: 0.28 }, { x: 0.88, y: 0.28 },
+      { x: 0.24, y: 0.50 }, { x: 0.42, y: 0.50 }, { x: 0.60, y: 0.50 }, { x: 0.78, y: 0.50 },
+      { x: 0.18, y: 0.72 }, { x: 0.36, y: 0.72 }, { x: 0.54, y: 0.72 }, { x: 0.72, y: 0.72 }, { x: 0.88, y: 0.72 }
+    ];
+
+    const insulatorDipoles = [
+      { x: 0.25, y: 0.25 }, { x: 0.50, y: 0.25 }, { x: 0.75, y: 0.25 },
+      { x: 0.25, y: 0.50 }, { x: 0.50, y: 0.50 }, { x: 0.75, y: 0.50 },
+      { x: 0.25, y: 0.75 }, { x: 0.50, y: 0.75 }, { x: 0.75, y: 0.75 }
+    ];
+
+    function getRodCharge() {
+      return document.querySelector("input[name='rodCharge']:checked").value;
+    }
+
+    function getDistancePercent() {
+      return Number(distanceSlider.value);
+    }
+
+    function getPolarizationStrength() {
+      const distance = getDistancePercent();
+      return Math.pow((100 - distance) / 100, 0.82);
+    }
+
+    function getRodX(width) {
+      const distance = getDistancePercent();
+      const farX = 70;
+      const nearX = 178;
+      return farX + (100 - distance) / 100 * (nearX - farX);
+    }
+
+    function clearCanvas(ctx, canvas) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function drawRod(ctx, x, y, width, height, charge) {
+      const radius = 14;
+      ctx.save();
+      ctx.fillStyle = charge === "positive" ? colors.rodPositive : colors.rodNegative;
+      ctx.strokeStyle = charge === "positive" ? colors.blueDark : colors.redDark;
+      ctx.lineWidth = 3;
+      roundRect(ctx, x, y, width, height, radius);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "white";
+      ctx.font = "700 26px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      const symbol = charge === "positive" ? "+" : "−";
+      for (let i = 0; i < 5; i++) {
+        ctx.fillText(symbol, x + width / 2, y + 38 + i * 54);
+      }
+
+      ctx.font = "700 16px system-ui, sans-serif";
+      ctx.fillText(charge === "positive" ? "positive rod" : "negative rod", x + width / 2, y - 14);
+      ctx.restore();
+    }
+
+    function drawForceArrow(ctx, objectRect, label, materialScale = 1) {
+      const strength = getPolarizationStrength();
+      if (strength <= 0.01) {
+        return;
+      }
+      const effectiveStrength = strength * materialScale;
+      const arrowLength = 28 + effectiveStrength * 86;
+      const centerX = objectRect.x + objectRect.w / 2;
+      const startX = centerX + arrowLength / 2;
+      const endX = centerX - arrowLength / 2;
+      const y = objectRect.y - 42;
+      const lineWidth = 3 + effectiveStrength * 3.4;
+      drawArrow(ctx, startX, y, endX, y, colors.green, lineWidth);
+      ctx.save();
+      ctx.fillStyle = colors.green;
+      ctx.font = "700 15px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(label, centerX, y - 14);
+      ctx.restore();
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2, color, lineWidth) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      const headLength = 13;
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.lineCap = "round";
+      const shaftEndX = x2 - headLength * 0.72 * Math.cos(angle);
+      const shaftEndY = y2 - headLength * 0.72 * Math.sin(angle);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(shaftEndX, shaftEndY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headLength * Math.cos(angle - Math.PI / 6), y2 - headLength * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - headLength * Math.cos(angle + Math.PI / 6), y2 - headLength * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function roundRect(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function drawElectron(ctx, x, y, radius = 8) {
+      ctx.save();
+      ctx.fillStyle = colors.electron;
+      ctx.strokeStyle = colors.redDark;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "white";
+      ctx.font = "700 14px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("−", x, y - 1);
+      ctx.restore();
+    }
+
+    function drawPositiveCenter(ctx, x, y, radius = 8) {
+      ctx.save();
+      ctx.fillStyle = colors.positive;
+      ctx.strokeStyle = colors.blueDark;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "white";
+      ctx.font = "700 14px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("+", x, y);
+      ctx.restore();
+    }
+
+    function drawCanvasPolaritySymbols(ctx, objectRect, charge, strength, materialScale) {
+      if (strength <= 0.01) {
+        return;
+      }
+      const nearIsNegative = charge === "positive";
+      const nearSymbol = nearIsNegative ? "−" : "+";
+      const farSymbol = nearIsNegative ? "+" : "−";
+      const nearColor = nearIsNegative ? colors.redDark : colors.blueDark;
+      const farColor = nearIsNegative ? colors.blueDark : colors.redDark;
+      const fontSize = 22 + strength * 34 * materialScale;
+
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `900 ${fontSize}px system-ui, sans-serif`;
+      ctx.fillStyle = nearColor;
+      ctx.fillText(nearSymbol, objectRect.x + 42, objectRect.y + objectRect.h + 30);
+      ctx.fillStyle = farColor;
+      ctx.fillText(farSymbol, objectRect.x + objectRect.w - 42, objectRect.y + objectRect.h + 30);
+      ctx.restore();
+    }
+
+    function drawConductor() {
+      const ctx = conductorCtx;
+      const canvas = conductorCanvas;
+      clearCanvas(ctx, canvas);
+
+      const charge = getRodCharge();
+      const strength = getPolarizationStrength();
+      const rodX = getRodX(canvas.width);
+      const objectRect = { x: 258, y: 105, w: 218, h: 150 };
+      const rodRect = { x: rodX, y: 70, w: 48, h: 235 };
+      const electronDirection = charge === "positive" ? -1 : 1;
+      const electronShift = electronDirection * strength * 30;
+
+      drawRod(ctx, rodRect.x, rodRect.y, rodRect.w, rodRect.h, charge);
+      drawForceArrow(ctx, objectRect, "Net Force", 1.15);
+
+      ctx.save();
+      ctx.fillStyle = colors.conductorFill;
+      ctx.strokeStyle = colors.conductorStroke;
+      ctx.lineWidth = 3;
+      roundRect(ctx, objectRect.x, objectRect.y, objectRect.w, objectRect.h, 22);
+      ctx.fill();
+      ctx.stroke();
+
+      const gradient = ctx.createLinearGradient(objectRect.x, 0, objectRect.x + objectRect.w, 0);
+      if (charge === "positive") {
+        gradient.addColorStop(0, `rgba(220, 38, 38, ${strength * 0.40})`);
+        gradient.addColorStop(0.5, "rgba(255, 255, 255, 0)");
+        gradient.addColorStop(1, `rgba(37, 99, 235, ${strength * 0.30})`);
+      } else {
+        gradient.addColorStop(0, `rgba(37, 99, 235, ${strength * 0.30})`);
+        gradient.addColorStop(0.5, "rgba(255, 255, 255, 0)");
+        gradient.addColorStop(1, `rgba(220, 38, 38, ${strength * 0.40})`);
+      }
+      ctx.fillStyle = gradient;
+      roundRect(ctx, objectRect.x + 2, objectRect.y + 2, objectRect.w - 4, objectRect.h - 4, 20);
+      ctx.fill();
+
+      ctx.restore();
+
+      conductorPositiveSeeds.forEach((seed) => {
+        const x = objectRect.x + seed.x * objectRect.w;
+        const y = objectRect.y + seed.y * objectRect.h;
+        drawPositiveCenter(ctx, x, y, 7);
+      });
+
+      conductorElectronSeeds.forEach((seed, index) => {
+        const baseX = objectRect.x + seed.x * objectRect.w;
+        const baseY = objectRect.y + seed.y * objectRect.h;
+        const edgeBias = (0.5 - seed.x) * electronDirection * strength * 13;
+        const wiggle = Math.sin(index * 1.7) * strength * 2;
+        const x = clamp(baseX + electronShift + edgeBias, objectRect.x + 15, objectRect.x + objectRect.w - 15);
+        const y = clamp(baseY + wiggle, objectRect.y + 15, objectRect.y + objectRect.h - 15);
+        drawElectron(ctx, x, y, 8);
+      });
+
+      ctx.save();
+      ctx.strokeStyle = colors.border;
+      ctx.setLineDash([7, 8]);
+      ctx.beginPath();
+      ctx.moveTo(objectRect.x + objectRect.w / 2, objectRect.y + 8);
+      ctx.lineTo(objectRect.x + objectRect.w / 2, objectRect.y + objectRect.h - 8);
+      ctx.stroke();
+      ctx.restore();
+
+      drawCanvasPolaritySymbols(ctx, objectRect, charge, strength, 1.18);
+    }
+
+    function drawInsulator() {
+      const ctx = insulatorCtx;
+      const canvas = insulatorCanvas;
+      clearCanvas(ctx, canvas);
+
+      const charge = getRodCharge();
+      const strength = getPolarizationStrength();
+      const rodX = getRodX(canvas.width);
+      const objectRect = { x: 258, y: 105, w: 218, h: 150 };
+      const rodRect = { x: rodX, y: 70, w: 48, h: 235 };
+      const electronDirection = charge === "positive" ? -1 : 1;
+      const dipoleShift = electronDirection * strength * 16;
+
+      drawRod(ctx, rodRect.x, rodRect.y, rodRect.w, rodRect.h, charge);
+      drawForceArrow(ctx, objectRect, "Net Force", 0.62);
+
+      ctx.save();
+      ctx.fillStyle = colors.insulatorFill;
+      ctx.strokeStyle = colors.insulatorStroke;
+      ctx.lineWidth = 3;
+      roundRect(ctx, objectRect.x, objectRect.y, objectRect.w, objectRect.h, 22);
+      ctx.fill();
+      ctx.stroke();
+
+      const gradient = ctx.createLinearGradient(objectRect.x, 0, objectRect.x + objectRect.w, 0);
+      if (charge === "positive") {
+        gradient.addColorStop(0, `rgba(220, 38, 38, ${strength * 0.22})`);
+        gradient.addColorStop(0.5, "rgba(255, 255, 255, 0)");
+        gradient.addColorStop(1, `rgba(37, 99, 235, ${strength * 0.18})`);
+      } else {
+        gradient.addColorStop(0, `rgba(37, 99, 235, ${strength * 0.18})`);
+        gradient.addColorStop(0.5, "rgba(255, 255, 255, 0)");
+        gradient.addColorStop(1, `rgba(220, 38, 38, ${strength * 0.22})`);
+      }
+      ctx.fillStyle = gradient;
+      roundRect(ctx, objectRect.x + 2, objectRect.y + 2, objectRect.w - 4, objectRect.h - 4, 20);
+      ctx.fill();
+      ctx.restore();
+
+      insulatorDipoles.forEach((seed) => {
+        const centerX = objectRect.x + seed.x * objectRect.w;
+        const centerY = objectRect.y + seed.y * objectRect.h;
+        const electronX = centerX + dipoleShift;
+        const electronY = centerY;
+
+        ctx.save();
+        ctx.strokeStyle = colors.muted;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(electronX, electronY);
+        ctx.stroke();
+        ctx.restore();
+
+        drawPositiveCenter(ctx, centerX, centerY, 8);
+        drawElectron(ctx, electronX, electronY, 8);
+      });
+
+      ctx.save();
+      ctx.strokeStyle = colors.border;
+      ctx.setLineDash([7, 8]);
+      ctx.beginPath();
+      ctx.moveTo(objectRect.x + objectRect.w / 2, objectRect.y + 8);
+      ctx.lineTo(objectRect.x + objectRect.w / 2, objectRect.y + objectRect.h - 8);
+      ctx.stroke();
+      ctx.restore();
+
+      drawCanvasPolaritySymbols(ctx, objectRect, charge, strength, 0.52);
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function setPolarityDescription(element, kind) {
+      element.classList.remove("negative-description", "positive-description", "neutral-description");
+      if (kind === "neutral") {
+        element.classList.add("neutral-description");
+        element.textContent = "Neutral: no side excess or deficit";
+        return;
+      }
+      element.classList.add(kind === "positive" ? "positive-description" : "negative-description");
+      element.textContent = kind === "positive"
+        ? "Electron deficit: positive charge"
+        : "Electron excess: negative charge";
+    }
+
+    function updateReadouts() {
+      const charge = getRodCharge();
+      const distance = getDistancePercent();
+      const strength = getPolarizationStrength();
+      distanceOutput.textContent = `${distance}%`;
+
+      if (strength <= 0.01) {
+        setPolarityDescription(conductorNearSymbol, "neutral");
+        setPolarityDescription(conductorFarSymbol, "neutral");
+        setPolarityDescription(insulatorNearSymbol, "neutral");
+        setPolarityDescription(insulatorFarSymbol, "neutral");
+      } else if (charge === "positive") {
+        setPolarityDescription(conductorNearSymbol, "negative");
+        setPolarityDescription(conductorFarSymbol, "positive");
+        setPolarityDescription(insulatorNearSymbol, "negative");
+        setPolarityDescription(insulatorFarSymbol, "positive");
+      } else {
+        setPolarityDescription(conductorNearSymbol, "positive");
+        setPolarityDescription(conductorFarSymbol, "negative");
+        setPolarityDescription(insulatorNearSymbol, "positive");
+        setPolarityDescription(insulatorFarSymbol, "negative");
+      }
+
+      const chargeText = charge === "positive" ? "Positive rod" : "Negative rod";
+      const motionText = isPlaying ? " Animation is playing." : " Animation is paused.";
+      const polarizationText = strength <= 0.01
+        ? "At 100% distance, both objects are shown unpolarized."
+        : "Both neutral objects are attracted toward the rod. The conductor shows stronger polarization than the insulator.";
+    }
+
+    function render() {
+      updateReadouts();
+      drawConductor();
+      drawInsulator();
+    }
+
+    function animate(timestamp) {
+      if (!lastFrameTime) {
+        lastFrameTime = timestamp;
+      }
+      const elapsed = timestamp - lastFrameTime;
+      lastFrameTime = timestamp;
+
+      const delta = direction * animationSpeed * elapsed / 1000;
+      animatedDistance += delta;
+
+      if (animatedDistance <= 0) {
+        animatedDistance = 0;
+        direction = 1;
+      }
+      if (animatedDistance >= 100) {
+        animatedDistance = 100;
+        direction = -1;
+      }
+
+      distanceSlider.value = String(Math.round(animatedDistance));
+      render();
+
+      if (isPlaying) {
+        animationId = requestAnimationFrame(animate);
+      }
+    }
+
+    function play() {
+      if (isPlaying) {
+        return;
+      }
+      isPlaying = true;
+      playPauseButton.textContent = "Pause";
+      lastFrameTime = null;
+      animationId = requestAnimationFrame(animate);
+      render();
+    }
+
+    function pause() {
+      isPlaying = false;
+      playPauseButton.textContent = "Play";
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      render();
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        pause();
+      } else {
+        play();
+      }
+    }
+
+    function stepDistance(amount) {
+      pause();
+      const nextDistance = clamp(Number(distanceSlider.value) + amount, 0, 100);
+      distanceSlider.value = String(nextDistance);
+      animatedDistance = nextDistance;
+      render();
+    }
+
+    distanceSlider.addEventListener("input", () => {
+      pause();
+      animatedDistance = Number(distanceSlider.value);
+      render();
+    });
+
+    rodChargeInputs.forEach((input) => {
+      input.addEventListener("change", render);
+    });
+
+    playPauseButton.addEventListener("click", togglePlay);
+    stepCloserButton.addEventListener("click", () => stepDistance(-5));
+    stepFartherButton.addEventListener("click", () => stepDistance(5));
+
+    document.addEventListener("keydown", (event) => {
+      const activeTag = document.activeElement.tagName.toLowerCase();
+      const isTypingControl = activeTag === "input" && document.activeElement.type !== "radio" && document.activeElement.type !== "range";
+      if (isTypingControl) {
+        return;
+      }
+
+      if (event.code === "Space" && activeTag !== "button") {
+        event.preventDefault();
+        togglePlay();
+      } else if (event.key === ".") {
+        event.preventDefault();
+        stepDistance(-5);
+      } else if (event.key === ",") {
+        event.preventDefault();
+        stepDistance(5);
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
