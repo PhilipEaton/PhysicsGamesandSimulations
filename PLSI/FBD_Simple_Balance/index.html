@@ -5,44 +5,496 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FBD Balance Trainer</title>
   <style>
+    :root {
+      --page-bg: #f3f4f6;
+      --panel-bg: #ffffff;
+      --text: #111827;
+      --muted-text: #4b5563;
+      --border: #d1d5db;
+      --primary-blue: #2563eb;
+      --primary-blue-dark: #1d4ed8;
+      --success-green: #15803d;
+      --warning-amber: #f59e0b;
+      --error-red: #dc2626;
+      --focus-amber: #fbbf24;
+      --header-bg: #111827;
+      --canvas-bg: #ffffff;
+      --given-force: #2563eb;
+      --horizontal-answer: #ea580c;
+      --vertical-answer: #7c3aed;
+      --solved-force: #15803d;
+      --block-fill: #e5e7eb;
+      --shadow: 0 10px 24px rgba(15, 23, 42, 0.10);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #d8d8d8;
+      background: var(--page-bg);
+      color: var(--text);
       font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.5;
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -48px;
+      left: 1rem;
+      z-index: 10;
+      padding: 0.75rem 1rem;
+      border-radius: 0.5rem;
+      background: var(--focus-amber);
+      color: #111827;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .skip-link:focus {
+      top: 1rem;
+      outline: 3px solid #ffffff;
+      outline-offset: 2px;
+    }
+
+    header {
+      background: var(--header-bg);
+      color: #ffffff;
+      padding: 1.5rem clamp(1rem, 3vw, 2rem);
+    }
+
+    header h1 {
+      margin: 0 0 0.35rem;
+      font-size: clamp(1.75rem, 3vw, 2.5rem);
+      line-height: 1.1;
+    }
+
+    header p {
+      margin: 0;
+      max-width: 900px;
+      color: #d1d5db;
+      font-size: 1.05rem;
+    }
+
+    main {
+      width: min(1200px, calc(100% - 2rem));
+      margin: 1.25rem auto 2rem;
+    }
+
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      box-shadow: var(--shadow);
+      padding: 1rem;
+    }
+
+    .card h2,
+    .card h3 {
+      margin-top: 0;
+      line-height: 1.2;
+    }
+
+    .how-to {
+      margin-bottom: 1.25rem;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 360px) 1fr;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    .visual-stack {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    fieldset {
+      margin: 0 0 1rem;
+      padding: 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+    }
+
+    legend {
+      padding: 0 0.35rem;
+      font-weight: 700;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-bottom: 0.75rem;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 44px;
+      border: 2px solid var(--primary-blue);
+      border-radius: 0.65rem;
+      padding: 0.55rem 0.8rem;
+      background: #ffffff;
+      color: var(--primary-blue);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #eff6ff;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    canvas:focus-visible {
+      outline: 4px solid var(--focus-amber);
+      outline-offset: 3px;
+    }
+
+    button.primary {
+      background: var(--primary-blue);
+      color: #ffffff;
+    }
+
+    button.primary:hover {
+      background: var(--primary-blue-dark);
+    }
+
+    button.danger {
+      border-color: var(--error-red);
+      background: var(--error-red);
+      color: #ffffff;
+    }
+
+    button.danger:hover {
+      background: #b91c1c;
+    }
+
+    button.active {
+      border-color: var(--warning-amber);
+      background: #fffbeb;
+      color: #92400e;
+    }
+
+    button.solved {
+      border-color: var(--success-green);
+      background: var(--success-green);
+      color: #ffffff;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.65;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.45rem 0.55rem;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .hint {
+      color: var(--muted-text);
+      font-size: 0.95rem;
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+
+    .readout {
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      background: #f9fafb;
+    }
+
+    .readout .label {
+      color: var(--muted-text);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .readout .value {
+      margin-top: 0.15rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .canvas-wrap {
+      overflow-x: auto;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 0.9rem;
+      background: #f9fafb;
     }
 
     canvas {
-      background: #ffffff;
-      border: 1px solid #333;
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+      display: block;
+      width: 100%;
+      max-width: 900px;
+      height: auto;
+      margin: 0 auto;
+      background: var(--canvas-bg);
+      border: 1px solid #374151;
+      border-radius: 0.75rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .status-message {
+      min-height: 2.75rem;
+      margin-top: 0.8rem;
+      border-left: 5px solid var(--primary-blue);
+      border-radius: 0.5rem;
+      padding: 0.65rem 0.8rem;
+      background: #eff6ff;
+      font-weight: 700;
+    }
+
+    .success-message {
+      border-left-color: var(--success-green);
+      background: #f0fdf4;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--border);
+      padding: 0.55rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f3f4f6;
+    }
+
+    .note-list {
+      margin-bottom: 0;
+    }
+
+    .bottom-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      margin-top: 1.25rem;
+    }
+
+    @media (max-width: 900px) {
+      .bottom-cards {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="900" height="650"></canvas>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header>
+    <h1>FBD Balance Trainer</h1>
+    <p>Practice balancing a free-body diagram by drawing the horizontal and vertical components of the missing force.</p>
+  </header>
+
+  <main id="main-content">
+    <section class="card how-to" aria-labelledby="how-to-title">
+      <h2 id="how-to-title">How to use</h2>
+      <p>
+        The blue arrows are the forces already acting on the block. Use the component dropdown to choose
+        the horizontal or vertical component, then drag from the block to draw that part of the force needed
+        to balance the diagram. A close answer snaps to the exact value.
+      </p>
+      <p class="hint">
+        Keyboard option: choose a component, then use the arrow keys to adjust the selected answer. Hold Shift for 5 N steps.
+        Press Enter to check the selected component. Press R to reset the current attempt or Space for a new problem.
+      </p>
+    </section>
+
+    <div class="layout">
+      <section class="card" aria-labelledby="controls-title">
+        <h2 id="controls-title">Controls</h2>
+
+        <fieldset>
+          <legend>Component controls</legend>
+          <div class="input-grid">
+            <div>
+              <label for="componentSelect">Component to draw</label>
+              <select id="componentSelect">
+                <option value="horizontal">Horizontal component</option>
+                <option value="vertical">Vertical component</option>
+              </select>
+            </div>
+            <div>
+              <label for="directionSelect">Direction</label>
+              <select id="directionSelect">
+                <option value="right">Right</option>
+                <option value="left">Left</option>
+                <option value="up">Up</option>
+                <option value="down">Down</option>
+              </select>
+            </div>
+            <div>
+              <label for="magnitudeInput">Magnitude in newtons</label>
+              <input id="magnitudeInput" type="number" min="0" step="1" value="0" inputmode="decimal" />
+            </div>
+            <button id="submitNumericButton" type="button" class="primary">Check Entered Component</button>
+          </div>
+          <p class="hint">Choose the component from the dropdown, then drag on the diagram or use the keyboard/numeric controls. When only one unfinished component remains, it is selected automatically.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Problem controls</legend>
+          <div class="button-row">
+            <button id="resetButton" type="button" class="danger">Reset Attempt</button>
+            <button id="nextButton" type="button" class="primary">Next Problem</button>
+          </div>
+        </fieldset>
+
+        <section aria-labelledby="readouts-title">
+          <h3 id="readouts-title">Accessible readouts</h3>
+          <div class="readout-grid">
+            <div class="readout">
+              <div class="label">Active component</div>
+              <div class="value" id="activeReadout">None</div>
+            </div>
+            <div class="readout">
+              <div class="label">Current attempt</div>
+              <div class="value" id="attemptReadout">0 N</div>
+            </div>
+            <div class="readout">
+              <div class="label">Horizontal status</div>
+              <div class="value" id="horizontalStatusReadout">Needed</div>
+            </div>
+            <div class="readout">
+              <div class="label">Vertical status</div>
+              <div class="value" id="verticalStatusReadout">Needed</div>
+            </div>
+          </div>
+          <div id="statusMessage" class="status-message" role="status" aria-live="polite">
+            Choose a component to draw.
+          </div>
+        </section>
+      </section>
+
+      <div class="visual-stack">
+        <section class="card" aria-labelledby="visual-title">
+        <h2 id="visual-title">Interactive field region</h2>
+        <div class="canvas-wrap">
+          <canvas
+            id="gameCanvas"
+            width="900"
+            height="650"
+            tabindex="0"
+            role="img"
+            aria-label="Free-body diagram balance trainer. The canvas shows the block, given forces, and your horizontal and vertical answer components."
+            aria-describedby="canvasInstructions stateSummary"
+          ></canvas>
+        </div>
+        <p id="canvasInstructions" class="sr-only">
+          Choose a component, then drag from the block or use the keyboard/numeric controls to draw the balancing component.
+        </p>
+        <p id="stateSummary" class="sr-only"></p>
+        </section>
+
+        <section class="card" aria-labelledby="table-title">
+        <h2 id="table-title">Force information table</h2>
+        <p class="hint">The given force table communicates the same force information shown by the blue arrows.</p>
+        <div class="table-wrap">
+          <table>
+            <caption class="sr-only">Given forces and current student component attempts</caption>
+            <thead>
+              <tr>
+                <th scope="col">Item</th>
+                <th scope="col">Direction</th>
+                <th scope="col">Magnitude</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody id="forceTableBody"></tbody>
+          </table>
+        </div>
+        </section>
+      </div>
+    </div>
+  </main>
 
   <script>
     // ============================================================
     // FBD Balance Trainer
-    // ============================================================
-    //
-    // Goal:
-    //   Students draw the horizontal and vertical components needed
-    //   to balance a given free body diagram.
-    //
-    // Controls:
-    //   Click "Horizontal Component" or "Vertical Component"
-    //   Drag from the block to draw that component
-    //   Next Problem button or SPACE - new problem
-    //   Reset button or R - clear current answers
+    // Single-file HTML/CSS/vanilla JavaScript version
     // ============================================================
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+
+    const resetButton = document.getElementById("resetButton");
+    const nextButton = document.getElementById("nextButton");
+    const componentSelect = document.getElementById("componentSelect");
+    const directionSelect = document.getElementById("directionSelect");
+    const magnitudeInput = document.getElementById("magnitudeInput");
+    const submitNumericButton = document.getElementById("submitNumericButton");
+    const activeReadout = document.getElementById("activeReadout");
+    const attemptReadout = document.getElementById("attemptReadout");
+    const horizontalStatusReadout = document.getElementById("horizontalStatusReadout");
+    const verticalStatusReadout = document.getElementById("verticalStatusReadout");
+    const statusMessage = document.getElementById("statusMessage");
+    const stateSummary = document.getElementById("stateSummary");
+    const forceTableBody = document.getElementById("forceTableBody");
 
     // ----------------------------
     // Basic settings
@@ -50,44 +502,42 @@
 
     const WIDTH = 900;
     const HEIGHT = 650;
-    const FPS = 60;
-
     const CENTER = { x: WIDTH / 2, y: HEIGHT / 2 };
 
-    // Pixels per Newton for drawing arrows
     const FORCE_SCALE = 4;
-
-    // Forces will be random multiples of this
     const MIN_FORCE = 10;
     const MAX_FORCE = 60;
     const FORCE_STEP = 10;
 
-    // How close the student's answer needs to be, measured in Newtons
     const BASE_TOLERANCE = 5;
     const PERCENT_TOLERANCE = 0.12;
 
-    // Visual spacing
     const LABEL_DISTANCE = 32;
     const STACK_SPACING = 28;
     const ARROW_START_DISTANCE = 38;
     const ARROWHEAD_SIZE = 14;
 
-    // Safe drawing area for arrows and labels
     const SCREEN_MARGIN = 80;
     const TOP_DRAW_LIMIT = 170;
     const BOTTOM_DRAW_LIMIT = HEIGHT - 170;
 
-    // Colors
-    const WHITE = "rgb(255, 255, 255)";
-    const BLACK = "rgb(20, 20, 20)";
-    const GRAY = "rgb(180, 180, 180)";
-    const LIGHT_GRAY = "rgb(230, 230, 230)";
-    const DARK_GRAY = "rgb(90, 90, 90)";
-    const BLUE = "rgb(60, 120, 220)";
-    const RED = "rgb(220, 70, 70)";
-    const GREEN = "rgb(50, 170, 90)";
-    const ORANGE = "rgb(240, 150, 50)";
-    const PURPLE = "rgb(140, 80, 200)";
+    const ANSWER_HORIZONTAL_OFFSET = { x: 0, y: 52 };
+    const ANSWER_VERTICAL_OFFSET = { x: 52, y: 0 };
+
+    const COLORS = {
+      white: "rgb(255, 255, 255)",
+      black: "rgb(17, 24, 39)",
+      gray: "rgb(107, 114, 128)",
+      lightGray: "rgb(229, 231, 235)",
+      given: "rgb(37, 99, 235)",
+      horizontal: "rgb(234, 88, 12)",
+      vertical: "rgb(124, 58, 237)",
+      solved: "rgb(21, 128, 61)",
+      red: "rgb(220, 38, 38)",
+      amber: "rgb(245, 158, 11)",
+      canvasBg: "rgb(255, 255, 255)",
+      safeZone: "rgba(37, 99, 235, 0.06)"
+    };
 
     // ----------------------------
     // Vector helpers
@@ -113,14 +563,16 @@
       return { x: v.x * s, y: v.y * s };
     }
 
-    function length(v) {
+    function magnitude(v) {
       return Math.sqrt(v.x * v.x + v.y * v.y);
     }
 
     function normalize(v) {
-      const mag = length(v);
-      if (mag < 1e-9) return vec(0, 0);
-      return vec(v.x / mag, v.y / mag);
+      const mag = magnitude(v);
+      if (mag < 1e-9) {
+        return { x: 0, y: 0 };
+      }
+      return { x: v.x / mag, y: v.y / mag };
     }
 
     function randInt(min, max) {
@@ -129,6 +581,10 @@
 
     function randChoice(array) {
       return array[Math.floor(Math.random() * array.length)];
+    }
+
+    function clamp(value, minValue, maxValue) {
+      return Math.max(minValue, Math.min(maxValue, value));
     }
 
     function getMousePos(event) {
@@ -146,15 +602,16 @@
     // Drawing helpers
     // ----------------------------
 
-    function drawText(text, x, y, size = 28, color = BLACK) {
+    function drawText(text, x, y, size = 24, color = COLORS.black, align = "left") {
       ctx.fillStyle = color;
       ctx.font = `${size}px Arial`;
-      ctx.textAlign = "left";
+      ctx.textAlign = align;
       ctx.textBaseline = "top";
       ctx.fillText(text, x, y);
+      ctx.textAlign = "left";
     }
 
-    function drawCenteredText(text, x, y, size = 24, color = BLACK) {
+    function drawCenteredText(text, x, y, size = 22, color = COLORS.black) {
       ctx.fillStyle = color;
       ctx.font = `${size}px Arial`;
       ctx.textAlign = "center";
@@ -194,51 +651,39 @@
       const x = CENTER.x - blockSize / 2;
       const y = CENTER.y - blockSize / 2;
 
-      ctx.fillStyle = LIGHT_GRAY;
+      ctx.fillStyle = COLORS.lightGray;
       ctx.fillRect(x, y, blockSize, blockSize);
-
-      ctx.strokeStyle = BLACK;
+      ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 3;
       ctx.strokeRect(x, y, blockSize, blockSize);
+      drawCenteredText("block", CENTER.x, CENTER.y, 18, COLORS.black);
     }
 
-    function drawArrow(start, forceVec, color, label = null, width = 4, offset = vec(0, 0)) {
-      /*
-        Draws an arrow representing a force vector.
-
-        forceVec is in Newtons, with +x right and +y up.
-        Canvas screen coordinates use +y down, so we flip y when drawing.
-
-        offset is a screen-coordinate offset used to separate overlapping arrows.
-      */
-
+    function drawArrow(start, forceVec, color, label = null, width = 4, offset = vec(0, 0), dashed = false) {
       const baseStart = add(start, offset);
+      const screenVec = { x: forceVec.x * FORCE_SCALE, y: -forceVec.y * FORCE_SCALE };
 
-      const screenVec = vec(forceVec.x * FORCE_SCALE, -forceVec.y * FORCE_SCALE);
-
-      if (length(screenVec) < 1) {
+      if (magnitude(screenVec) < 1) {
         return;
       }
 
       const direction = normalize(screenVec);
-
-      // Shift the arrow's starting point from the center toward the edge of the block.
       const arrowStart = add(baseStart, mul(direction, ARROW_START_DISTANCE));
-
-      // Also shift the endpoint outward so the visible arrow length still represents the force.
       const end = add(arrowStart, screenVec);
-
-      const perp = vec(-direction.y, direction.x);
-
-      // Stop the line before the arrowhead tip so the arrowhead is visually distinct.
+      const perp = { x: -direction.y, y: direction.x };
       const lineEnd = sub(end, mul(direction, ARROWHEAD_SIZE * 0.75));
 
+      ctx.save();
       ctx.strokeStyle = color;
       ctx.lineWidth = width;
+      if (dashed) {
+        ctx.setLineDash([10, 8]);
+      }
       ctx.beginPath();
       ctx.moveTo(arrowStart.x, arrowStart.y);
       ctx.lineTo(lineEnd.x, lineEnd.y);
       ctx.stroke();
+      ctx.setLineDash([]);
 
       const p1 = end;
       const p2 = add(sub(end, mul(direction, ARROWHEAD_SIZE)), mul(perp, ARROWHEAD_SIZE * 0.5));
@@ -251,63 +696,17 @@
       ctx.lineTo(p3.x, p3.y);
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
 
       if (label !== null) {
         const labelPos = add(end, mul(direction, LABEL_DISTANCE));
-
         ctx.fillStyle = color;
-        ctx.font = "28px Arial";
+        ctx.font = "26px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(label, labelPos.x, labelPos.y);
-
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-      }
-    }
-
-    // ----------------------------
-    // Button class
-    // ----------------------------
-
-    class Button {
-      constructor(x, y, w, h, text, value) {
-        this.x = x;
-        this.y = y;
-        this.w = w;
-        this.h = h;
-        this.text = text;
-        this.value = value;
-      }
-
-      contains(mouse) {
-        return (
-          mouse.x >= this.x &&
-          mouse.x <= this.x + this.w &&
-          mouse.y >= this.y &&
-          mouse.y <= this.y + this.h
-        );
-      }
-
-      draw(active = false, solved = false) {
-        let fillColor = LIGHT_GRAY;
-        let borderColor = DARK_GRAY;
-        let textColor = BLACK;
-
-        if (solved) {
-          fillColor = GREEN;
-          borderColor = GREEN;
-          textColor = WHITE;
-        } else if (active) {
-          fillColor = ORANGE;
-          borderColor = ORANGE;
-          textColor = WHITE;
-        } else if (this.contains(mousePos)) {
-          fillColor = "rgb(220, 220, 220)";
-        }
-
-        roundRect(this.x, this.y, this.w, this.h, 8, fillColor, borderColor, 3);
-        drawCenteredText(this.text, this.x + this.w / 2, this.y + this.h / 2, 24, textColor);
       }
     }
 
@@ -316,64 +715,51 @@
     // ----------------------------
 
     function directionKey(forceVec) {
-      if (forceVec.x > 0) {
-        return "right";
-      } else if (forceVec.x < 0) {
-        return "left";
-      } else if (forceVec.y > 0) {
-        return "up";
-      } else if (forceVec.y < 0) {
-        return "down";
-      }
-
+      if (forceVec.x > 0) return "right";
+      if (forceVec.x < 0) return "left";
+      if (forceVec.y > 0) return "up";
+      if (forceVec.y < 0) return "down";
       return "zero";
     }
 
+    function directionLabel(forceVec) {
+      const key = directionKey(forceVec);
+      if (key === "right") return "right";
+      if (key === "left") return "left";
+      if (key === "up") return "up";
+      if (key === "down") return "down";
+      return "none";
+    }
+
+    function forceLabel(forceVec) {
+      return `${Math.round(magnitude(forceVec))} N`;
+    }
+
     function stackOffset(forceVec, index, total) {
-      /*
-        Returns a screen-coordinate offset so arrows in the same direction
-        do not overlap.
-
-        Right/left arrows are stacked vertically.
-        Up/down arrows are stacked horizontally.
-      */
-
       if (total <= 1) {
         return vec(0, 0);
       }
 
-      // Centers the stack around the block center.
       const centeredIndex = index - (total - 1) / 2;
       const distance = centeredIndex * STACK_SPACING;
-
       const key = directionKey(forceVec);
 
       if (key === "right" || key === "left") {
-        // Stack horizontal arrows vertically.
         return vec(0, distance);
-      } else if (key === "up" || key === "down") {
-        // Stack vertical arrows horizontally.
+      }
+
+      if (key === "up" || key === "down") {
         return vec(distance, 0);
       }
 
       return vec(0, 0);
     }
 
-    function drawGivenForces(forcesToDraw) {
-      /*
-        Draws the given forces, offsetting forces that point in the same direction
-        so they do not overlap.
-      */
+    function drawGivenForces() {
+      const groups = { right: [], left: [], up: [], down: [] };
 
-      const groups = {
-        right: [],
-        left: [],
-        up: [],
-        down: []
-      };
-
-      for (const f of forcesToDraw) {
-        groups[directionKey(f)].push(f);
+      for (const force of forces) {
+        groups[directionKey(force)].push(force);
       }
 
       for (const key of Object.keys(groups)) {
@@ -381,45 +767,26 @@
         const total = group.length;
 
         for (let i = 0; i < group.length; i++) {
-          const f = group[i];
-          const offset = stackOffset(f, i, total);
-
-          drawArrow(
-            CENTER,
-            f,
-            BLUE,
-            forceLabel(f),
-            5,
-            offset
-          );
+          const force = group[i];
+          const offset = stackOffset(force, i, total);
+          drawArrow(CENTER, force, COLORS.given, forceLabel(force), 5, offset);
         }
       }
     }
 
     function forceFromDrag(startPos, endPos) {
-      /*
-        Converts a mouse drag into a force vector.
-
-        Screen +y is down, but physics +y is up.
-      */
-
       const screenVec = sub(endPos, startPos);
-      return vec(screenVec.x / FORCE_SCALE, -screenVec.y / FORCE_SCALE);
+      return { x: screenVec.x / FORCE_SCALE, y: -screenVec.y / FORCE_SCALE };
     }
 
     function componentForceFromDrag(startPos, endPos, activeComponent) {
-      /*
-        Converts a mouse drag into either a horizontal or vertical force component.
-
-        If the horizontal component is active, vertical mouse motion is ignored.
-        If the vertical component is active, horizontal mouse motion is ignored.
-      */
-
       const rawForce = forceFromDrag(startPos, endPos);
 
       if (activeComponent === "horizontal") {
         return vec(rawForce.x, 0);
-      } else if (activeComponent === "vertical") {
+      }
+
+      if (activeComponent === "vertical") {
         return vec(0, rawForce.y);
       }
 
@@ -427,120 +794,50 @@
     }
 
     function randomForce() {
-      const direction = randChoice([
-        vec(1, 0),    // right
-        vec(-1, 0),   // left
-        vec(0, 1),    // up
-        vec(0, -1)    // down
-      ]);
-
-      const numberOfSteps = Math.floor((MAX_FORCE - MIN_FORCE) / FORCE_STEP);
-      const magnitude = MIN_FORCE + randInt(0, numberOfSteps) * FORCE_STEP;
-
-      return mul(direction, magnitude);
-    }
-
-    function forceLabel(forceVec) {
-      const mag = length(forceVec);
-      return `${mag.toFixed(0)} N`;
+      const directions = [vec(1, 0), vec(-1, 0), vec(0, 1), vec(0, -1)];
+      const direction = randChoice(directions);
+      const steps = (MAX_FORCE - MIN_FORCE) / FORCE_STEP;
+      const magnitudeValue = MIN_FORCE + randInt(0, steps) * FORCE_STEP;
+      return mul(direction, magnitudeValue);
     }
 
     function isAnswerClose(studentForce, targetForce) {
-      const error = length(sub(studentForce, targetForce));
-      const tolerance = Math.max(BASE_TOLERANCE, PERCENT_TOLERANCE * length(targetForce));
-
-      return {
-        closeEnough: error <= tolerance,
-        error,
-        tolerance
-      };
+      const error = magnitude(sub(studentForce, targetForce));
+      const tolerance = Math.max(BASE_TOLERANCE, PERCENT_TOLERANCE * magnitude(targetForce));
+      return { close: error <= tolerance, error, tolerance };
     }
-
-    function resetStudentAnswers(currentBalancingForce) {
-      /*
-        Creates the target component forces and resets the student's answers.
-
-        Components with zero magnitude are automatically marked as solved.
-      */
-
-      targetHorizontalForce = vec(currentBalancingForce.x, 0);
-      targetVerticalForce = vec(0, currentBalancingForce.y);
-
-      studentHorizontalForce = vec(0, 0);
-      studentVerticalForce = vec(0, 0);
-
-      horizontalSolved = length(targetHorizontalForce) === 0;
-      verticalSolved = length(targetVerticalForce) === 0;
-    }
-
-    function componentName(activeComponent) {
-      if (activeComponent === "horizontal") {
-        return "horizontal";
-      } else if (activeComponent === "vertical") {
-        return "vertical";
-      }
-
-      return "none";
-    }
-
-    // ----------------------------
-    // Screen-fit checks
-    // ----------------------------
 
     function arrowEndpoint(start, forceVec, offset = vec(0, 0)) {
-      /*
-        Computes where the arrow tip will be drawn on screen.
-
-        This matches the drawArrow() logic:
-        - start near the block edge
-        - endpoint extends outward from there by the force vector
-      */
-
       const baseStart = add(start, offset);
-      const screenVec = vec(forceVec.x * FORCE_SCALE, -forceVec.y * FORCE_SCALE);
+      const screenVec = { x: forceVec.x * FORCE_SCALE, y: -forceVec.y * FORCE_SCALE };
 
-      if (length(screenVec) < 1) {
+      if (magnitude(screenVec) < 1) {
         return baseStart;
       }
 
       const direction = normalize(screenVec);
       const arrowStart = add(baseStart, mul(direction, ARROW_START_DISTANCE));
-      const end = add(arrowStart, screenVec);
-
-      return end;
+      return add(arrowStart, screenVec);
     }
 
     function pointInsideSafeArea(point) {
       return (
-        SCREEN_MARGIN <= point.x && point.x <= WIDTH - SCREEN_MARGIN &&
-        TOP_DRAW_LIMIT <= point.y && point.y <= BOTTOM_DRAW_LIMIT
+        point.x >= SCREEN_MARGIN &&
+        point.x <= WIDTH - SCREEN_MARGIN &&
+        point.y >= TOP_DRAW_LIMIT &&
+        point.y <= BOTTOM_DRAW_LIMIT
       );
     }
 
     function arrowFitsOnScreen(forceVec, offset = vec(0, 0)) {
-      const end = arrowEndpoint(CENTER, forceVec, offset);
-      return pointInsideSafeArea(end);
+      return pointInsideSafeArea(arrowEndpoint(CENTER, forceVec, offset));
     }
 
-    function problemFitsOnScreen(forcesToCheck, currentBalancingForce) {
-      /*
-        Checks that the generated problem will fit on screen.
+    function problemFitsOnScreen(candidateForces, candidateBalancingForce) {
+      const groups = { right: [], left: [], up: [], down: [] };
 
-        This includes:
-        - all given forces
-        - the horizontal balancing component
-        - the vertical balancing component
-      */
-
-      const groups = {
-        right: [],
-        left: [],
-        up: [],
-        down: []
-      };
-
-      for (const f of forcesToCheck) {
-        groups[directionKey(f)].push(f);
+      for (const force of candidateForces) {
+        groups[directionKey(force)].push(force);
       }
 
       for (const key of Object.keys(groups)) {
@@ -548,101 +845,503 @@
         const total = group.length;
 
         for (let i = 0; i < group.length; i++) {
-          const f = group[i];
-          const offset = stackOffset(f, i, total);
-
-          if (!arrowFitsOnScreen(f, offset)) {
+          const force = group[i];
+          const offset = stackOffset(force, i, total);
+          if (!arrowFitsOnScreen(force, offset)) {
             return false;
           }
         }
       }
 
-      // Check student answer components using the same offsets used for drawing.
-      const targetHorizontal = vec(currentBalancingForce.x, 0);
-      const targetVertical = vec(0, currentBalancingForce.y);
+      const targetHorizontal = vec(candidateBalancingForce.x, 0);
+      const targetVertical = vec(0, candidateBalancingForce.y);
 
-      if (length(targetHorizontal) > 0) {
-        if (!arrowFitsOnScreen(targetHorizontal, vec(0, 52))) {
-          return false;
-        }
+      if (magnitude(targetHorizontal) > 0 && !arrowFitsOnScreen(targetHorizontal, ANSWER_HORIZONTAL_OFFSET)) {
+        return false;
       }
 
-      if (length(targetVertical) > 0) {
-        if (!arrowFitsOnScreen(targetVertical, vec(52, 0))) {
-          return false;
-        }
+      if (magnitude(targetVertical) > 0 && !arrowFitsOnScreen(targetVertical, ANSWER_VERTICAL_OFFSET)) {
+        return false;
       }
 
       return true;
     }
 
     function generateProblem() {
-      /*
-        Generates 1-4 random forces.
+      let guard = 0;
 
-        Rejects cases where:
-        - the net force is zero
-        - any given force arrow would go off screen
-        - either answer component would go off screen
-      */
-
-      while (true) {
+      while (guard < 10000) {
+        guard++;
         const numForces = randInt(1, 4);
-        const newForces = [];
+        const candidateForces = [];
 
         for (let i = 0; i < numForces; i++) {
-          newForces.push(randomForce());
+          candidateForces.push(randomForce());
         }
 
-        let newNetForce = vec(0, 0);
-        for (const f of newForces) {
-          newNetForce = add(newNetForce, f);
+        let candidateNetForce = vec(0, 0);
+        for (const force of candidateForces) {
+          candidateNetForce = add(candidateNetForce, force);
         }
 
-        if (length(newNetForce) === 0) {
+        if (magnitude(candidateNetForce) === 0) {
           continue;
         }
 
-        const newBalancingForce = mul(newNetForce, -1);
+        const candidateBalancingForce = mul(candidateNetForce, -1);
 
-        if (problemFitsOnScreen(newForces, newBalancingForce)) {
+        if (problemFitsOnScreen(candidateForces, candidateBalancingForce)) {
           return {
-            forces: newForces,
-            netForce: newNetForce,
-            balancingForce: newBalancingForce
+            forces: candidateForces,
+            netForce: candidateNetForce,
+            balancingForce: candidateBalancingForce
           };
         }
       }
+
+      return {
+        forces: [vec(30, 0), vec(0, 20)],
+        netForce: vec(30, 20),
+        balancingForce: vec(-30, -20)
+      };
+    }
+
+    function resetStudentAnswers() {
+      targetHorizontalForce = vec(balancingForce.x, 0);
+      targetVerticalForce = vec(0, balancingForce.y);
+      studentHorizontalForce = vec(0, 0);
+      studentVerticalForce = vec(0, 0);
+      horizontalSolved = magnitude(targetHorizontalForce) === 0;
+      verticalSolved = magnitude(targetVerticalForce) === 0;
+      activeComponent = getNextNeededComponent();
+      dragging = false;
+      updateComponentSelectOptions();
+      updateNumericControlsForActiveComponent();
+      updateInterface();
     }
 
     function newProblem() {
       const problem = generateProblem();
-
       forces = problem.forces;
       netForce = problem.netForce;
       balancingForce = problem.balancingForce;
-
-      resetStudentAnswers(balancingForce);
-
-      activeComponent = null;
-      dragging = false;
-      dragStart = CENTER;
-      dragEnd = CENTER;
+      resetStudentAnswers();
+      setStatus(activeComponent === null ? "New problem loaded. This problem is already balanced." : `New problem loaded. ${capitalize(activeComponent)} component selected.`);
+      drawFrame();
     }
 
-    function resetCurrentProblem() {
-      /*
-        Keeps the same generated FBD, but clears the student's current
-        horizontal and vertical component answers.
-      */
-
-      resetStudentAnswers(balancingForce);
-
-      activeComponent = null;
-      dragging = false;
-      dragStart = CENTER;
-      dragEnd = CENTER;
+    function getNextNeededComponent() {
+      if (!horizontalSolved) return "horizontal";
+      if (!verticalSolved) return "vertical";
+      return null;
     }
+
+    function capitalize(text) {
+      return text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
+    function updateComponentSelectOptions() {
+      for (const option of componentSelect.options) {
+        if (option.value === "horizontal") {
+          option.disabled = horizontalSolved;
+          option.textContent = horizontalSolved ? "Horizontal component — complete" : "Horizontal component";
+        } else if (option.value === "vertical") {
+          option.disabled = verticalSolved;
+          option.textContent = verticalSolved ? "Vertical component — complete" : "Vertical component";
+        }
+      }
+
+      if (activeComponent !== null) {
+        componentSelect.value = activeComponent;
+      }
+    }
+
+    function autoSelectRemainingComponent() {
+      if (horizontalSolved && verticalSolved) {
+        activeComponent = null;
+        return;
+      }
+
+      if (activeComponent === null ||
+          (activeComponent === "horizontal" && horizontalSolved) ||
+          (activeComponent === "vertical" && verticalSolved)) {
+        activeComponent = getNextNeededComponent();
+      }
+    }
+
+    function setActiveComponent(component) {
+      if (component === "horizontal" && horizontalSolved) {
+        activeComponent = getNextNeededComponent();
+        setStatus("The horizontal component is already complete. The remaining component is selected.");
+      } else if (component === "vertical" && verticalSolved) {
+        activeComponent = getNextNeededComponent();
+        setStatus("The vertical component is already complete. The remaining component is selected.");
+      } else {
+        activeComponent = component;
+        setStatus(`Drawing ${component} component. Drag on the diagram, use arrow keys, or enter a value.`);
+      }
+
+      updateComponentSelectOptions();
+      updateNumericControlsForActiveComponent();
+      updateInterface();
+      drawFrame();
+    }
+
+    function currentStudentForce() {
+      if (activeComponent === "horizontal") {
+        return studentHorizontalForce;
+      }
+      if (activeComponent === "vertical") {
+        return studentVerticalForce;
+      }
+      return vec(0, 0);
+    }
+
+    function currentTargetForce() {
+      if (activeComponent === "horizontal") {
+        return targetHorizontalForce;
+      }
+      if (activeComponent === "vertical") {
+        return targetVerticalForce;
+      }
+      return vec(0, 0);
+    }
+
+    function setStudentForceForComponent(component, force) {
+      if (component === "horizontal") {
+        studentHorizontalForce = vec(force.x, 0);
+      } else if (component === "vertical") {
+        studentVerticalForce = vec(0, force.y);
+      }
+    }
+
+    function checkActiveComponent() {
+      if (activeComponent === null) {
+        setStatus("Choose a component before checking an answer.");
+        return;
+      }
+
+      const result = isAnswerClose(currentStudentForce(), currentTargetForce());
+
+      if (result.close) {
+        if (activeComponent === "horizontal") {
+          horizontalSolved = true;
+          studentHorizontalForce = copy(targetHorizontalForce);
+          setStatus("Horizontal component correct. It has snapped to the exact value.", true);
+        } else if (activeComponent === "vertical") {
+          verticalSolved = true;
+          studentVerticalForce = copy(targetVerticalForce);
+          setStatus("Vertical component correct. It has snapped to the exact value.", true);
+        }
+
+        activeComponent = null;
+      } else {
+        setStatus("Not balanced yet. Adjust the arrow and check again.");
+      }
+
+      autoSelectRemainingComponent();
+      updateComponentSelectOptions();
+      updateNumericControlsForActiveComponent();
+      updateInterface();
+      drawFrame();
+    }
+
+    function makeForceFromNumericInputs() {
+      const component = componentSelect.value;
+      const direction = directionSelect.value;
+      const magnitudeValue = Math.max(0, Number(magnitudeInput.value) || 0);
+
+      if (component === "horizontal") {
+        if (direction === "left") return vec(-magnitudeValue, 0);
+        return vec(magnitudeValue, 0);
+      }
+
+      if (component === "vertical") {
+        if (direction === "down") return vec(0, -magnitudeValue);
+        return vec(0, magnitudeValue);
+      }
+
+      return vec(0, 0);
+    }
+
+    function submitNumericAnswer() {
+      const component = componentSelect.value;
+      setActiveComponent(component);
+      setStudentForceForComponent(component, makeForceFromNumericInputs());
+      checkActiveComponent();
+    }
+
+    function updateNumericControlsForActiveComponent() {
+      const component = activeComponent || getNextNeededComponent() || componentSelect.value;
+      let force = component === "horizontal" ? studentHorizontalForce : studentVerticalForce;
+
+      if (component !== null) {
+        componentSelect.value = component;
+      }
+      magnitudeInput.value = String(Math.round(magnitude(force)));
+
+      if (component === "horizontal") {
+        directionSelect.innerHTML = "";
+        directionSelect.append(new Option("Right", "right"));
+        directionSelect.append(new Option("Left", "left"));
+        directionSelect.value = force.x < 0 ? "left" : "right";
+      } else {
+        directionSelect.innerHTML = "";
+        directionSelect.append(new Option("Up", "up"));
+        directionSelect.append(new Option("Down", "down"));
+        directionSelect.value = force.y < 0 ? "down" : "up";
+      }
+    }
+
+    function applyKeyboardNudge(event) {
+      if (activeComponent === null) {
+        return false;
+      }
+
+      const step = event.shiftKey ? 5 : 1;
+      let force = currentStudentForce();
+      let handled = false;
+
+      if (activeComponent === "horizontal") {
+        if (event.key === "ArrowRight") {
+          force = add(force, vec(step, 0));
+          handled = true;
+        } else if (event.key === "ArrowLeft") {
+          force = add(force, vec(-step, 0));
+          handled = true;
+        }
+      } else if (activeComponent === "vertical") {
+        if (event.key === "ArrowUp") {
+          force = add(force, vec(0, step));
+          handled = true;
+        } else if (event.key === "ArrowDown") {
+          force = add(force, vec(0, -step));
+          handled = true;
+        }
+      }
+
+      if (handled) {
+        setStudentForceForComponent(activeComponent, force);
+        updateNumericControlsForActiveComponent();
+        updateInterface();
+        drawFrame();
+        event.preventDefault();
+      }
+
+      return handled;
+    }
+
+    function setStatus(message, success = false) {
+      statusMessage.textContent = message;
+      statusMessage.classList.toggle("success-message", success);
+    }
+
+    function describeForce(force) {
+      if (magnitude(force) === 0) {
+        return "0 N";
+      }
+      return `${Math.round(magnitude(force))} N ${directionLabel(force)}`;
+    }
+
+    function getStateSummaryText() {
+      const givenText = forces
+        .map((force, index) => `force ${index + 1}: ${describeForce(force)}`)
+        .join("; ");
+      const activeText = activeComponent === null ? "no active component" : `${activeComponent} component active`;
+      return `${givenText}. ${activeText}. Horizontal attempt: ${describeForce(studentHorizontalForce)}, ${horizontalSolved ? "complete" : "not complete"}. Vertical attempt: ${describeForce(studentVerticalForce)}, ${verticalSolved ? "complete" : "not complete"}.`;
+    }
+
+    function updateForceTable() {
+      forceTableBody.innerHTML = "";
+
+      forces.forEach((force, index) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <th scope="row">Given force ${index + 1}</th>
+          <td>${directionLabel(force)}</td>
+          <td>${Math.round(magnitude(force))} N</td>
+          <td>Shown as blue arrow</td>
+        `;
+        forceTableBody.append(row);
+      });
+
+      const horizontalRow = document.createElement("tr");
+      horizontalRow.innerHTML = `
+        <th scope="row">Your horizontal component</th>
+        <td>${directionLabel(studentHorizontalForce)}</td>
+        <td>${Math.round(magnitude(studentHorizontalForce))} N</td>
+        <td>${horizontalSolved ? "Correct" : "Not complete"}</td>
+      `;
+      forceTableBody.append(horizontalRow);
+
+      const verticalRow = document.createElement("tr");
+      verticalRow.innerHTML = `
+        <th scope="row">Your vertical component</th>
+        <td>${directionLabel(studentVerticalForce)}</td>
+        <td>${Math.round(magnitude(studentVerticalForce))} N</td>
+        <td>${verticalSolved ? "Correct" : "Not complete"}</td>
+      `;
+      forceTableBody.append(verticalRow);
+    }
+
+    function updateInterface() {
+      updateComponentSelectOptions();
+
+      activeReadout.textContent = activeComponent === null ? "None" : activeComponent;
+      attemptReadout.textContent = describeForce(currentStudentForce());
+      horizontalStatusReadout.textContent = horizontalSolved ? "Done" : "Needed";
+      verticalStatusReadout.textContent = verticalSolved ? "Done" : "Needed";
+      stateSummary.textContent = getStateSummaryText();
+      updateForceTable();
+    }
+
+    // ----------------------------
+    // Drawing
+    // ----------------------------
+
+    function drawCanvasInstructions() {
+      // The safe drawing area is checked in code but is not shown visually.
+      // Directions are provided in the How to use card above the activity.
+    }
+
+    function drawFeedbackOnCanvas() {
+      const solved = horizontalSolved && verticalSolved;
+      let message = "Choose a component to draw.";
+      let color = COLORS.black;
+
+      if (solved) {
+        message = "Balanced! Both components are correct.";
+        color = COLORS.solved;
+      } else if (activeComponent === "horizontal") {
+        message = "Drawing horizontal component. Adjust the arrow, then release or press Enter to check.";
+      } else if (activeComponent === "vertical") {
+        message = "Drawing vertical component. Adjust the arrow, then release or press Enter to check.";
+      } else if (horizontalSolved && !verticalSolved) {
+        message = "Horizontal complete. Vertical component selected.";
+      } else if (verticalSolved && !horizontalSolved) {
+        message = "Vertical complete. Horizontal component selected.";
+      }
+
+      drawText(message, 30, HEIGHT - 70, 20, color);
+      drawText(`Horizontal: ${horizontalSolved ? "done" : "needed"}    Vertical: ${verticalSolved ? "done" : "needed"}`, 30, HEIGHT - 38, 20, COLORS.gray);
+    }
+
+    function drawFrame() {
+      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+      ctx.fillStyle = COLORS.canvasBg;
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+      drawCanvasInstructions();
+      drawBlock();
+      drawGivenForces();
+
+      if (magnitude(studentHorizontalForce) > 0) {
+        drawArrow(
+          CENTER,
+          studentHorizontalForce,
+          horizontalSolved ? COLORS.solved : COLORS.horizontal,
+          forceLabel(studentHorizontalForce),
+          5,
+          ANSWER_HORIZONTAL_OFFSET,
+          !horizontalSolved
+        );
+      }
+
+      if (magnitude(studentVerticalForce) > 0) {
+        drawArrow(
+          CENTER,
+          studentVerticalForce,
+          verticalSolved ? COLORS.solved : COLORS.vertical,
+          forceLabel(studentVerticalForce),
+          5,
+          ANSWER_VERTICAL_OFFSET,
+          !verticalSolved
+        );
+      }
+
+      drawFeedbackOnCanvas();
+    }
+
+    // ----------------------------
+    // Events
+    // ----------------------------
+
+    resetButton.addEventListener("click", () => {
+      resetStudentAnswers();
+      setStatus(activeComponent === null ? "Current attempt reset." : `Current attempt reset. ${capitalize(activeComponent)} component selected.`);
+      drawFrame();
+    });
+    nextButton.addEventListener("click", () => newProblem());
+
+    componentSelect.addEventListener("change", () => {
+      setActiveComponent(componentSelect.value);
+    });
+
+    submitNumericButton.addEventListener("click", submitNumericAnswer);
+
+    canvas.addEventListener("mousemove", (event) => {
+      mousePos = getMousePos(event);
+
+      if (dragging && activeComponent !== null) {
+        dragEnd = mousePos;
+        const force = componentForceFromDrag(dragStart, dragEnd, activeComponent);
+        setStudentForceForComponent(activeComponent, force);
+        updateNumericControlsForActiveComponent();
+        updateInterface();
+        drawFrame();
+      }
+    });
+
+    canvas.addEventListener("mousedown", (event) => {
+      mousePos = getMousePos(event);
+      const solved = horizontalSolved && verticalSolved;
+
+      if (!solved && activeComponent !== null) {
+        dragging = true;
+        dragStart = CENTER;
+        dragEnd = mousePos;
+        const force = componentForceFromDrag(dragStart, dragEnd, activeComponent);
+        setStudentForceForComponent(activeComponent, force);
+        updateNumericControlsForActiveComponent();
+        updateInterface();
+        drawFrame();
+      }
+    });
+
+    window.addEventListener("mouseup", (event) => {
+      if (dragging && activeComponent !== null) {
+        mousePos = getMousePos(event);
+        dragging = false;
+        dragEnd = mousePos;
+        const force = componentForceFromDrag(dragStart, dragEnd, activeComponent);
+        setStudentForceForComponent(activeComponent, force);
+        checkActiveComponent();
+      }
+    });
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === " ") {
+        newProblem();
+        event.preventDefault();
+        return;
+      }
+
+      if (event.key.toLowerCase() === "r") {
+        resetStudentAnswers();
+        setStatus("Current attempt reset. The same free-body diagram is still shown.");
+        drawFrame();
+        event.preventDefault();
+        return;
+      }
+
+      if (event.key === "Enter" && activeComponent !== null) {
+        checkActiveComponent();
+        event.preventDefault();
+        return;
+      }
+
+      applyKeyboardNudge(event);
+    });
 
     // ----------------------------
     // Main game state
@@ -651,247 +1350,19 @@
     let forces = [];
     let netForce = vec(0, 0);
     let balancingForce = vec(0, 0);
-
     let targetHorizontalForce = vec(0, 0);
     let targetVerticalForce = vec(0, 0);
-
     let studentHorizontalForce = vec(0, 0);
     let studentVerticalForce = vec(0, 0);
-
     let horizontalSolved = false;
     let verticalSolved = false;
-
     let activeComponent = null;
     let dragging = false;
     let dragStart = CENTER;
     let dragEnd = CENTER;
-
     let mousePos = { x: -9999, y: -9999 };
 
-    const horizontalButton = new Button(35, HEIGHT - 145, 250, 45, "Horizontal Component", "horizontal");
-    const verticalButton = new Button(305, HEIGHT - 145, 250, 45, "Vertical Component", "vertical");
-    const resetButton = new Button(575, HEIGHT - 145, 100, 45, "Reset", "reset");
-    const nextProblemButton = new Button(695, HEIGHT - 145, 175, 45, "Next Problem", "next_problem");
-
     newProblem();
-
-    // ----------------------------
-    // Events
-    // ----------------------------
-
-    canvas.addEventListener("mousemove", (event) => {
-      mousePos = getMousePos(event);
-
-      if (dragging && activeComponent !== null) {
-        dragEnd = mousePos;
-
-        if (activeComponent === "horizontal" && !horizontalSolved) {
-          studentHorizontalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
-        } else if (activeComponent === "vertical" && !verticalSolved) {
-          studentVerticalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
-        }
-      }
-    });
-
-    canvas.addEventListener("mousedown", (event) => {
-      mousePos = getMousePos(event);
-
-      const solved = horizontalSolved && verticalSolved;
-
-      if (resetButton.contains(mousePos)) {
-        resetCurrentProblem();
-        return;
-      }
-
-      if (nextProblemButton.contains(mousePos)) {
-        newProblem();
-        return;
-      }
-
-      if (horizontalButton.contains(mousePos)) {
-        if (!horizontalSolved) {
-          activeComponent = "horizontal";
-        }
-        dragging = false;
-        return;
-      }
-
-      if (verticalButton.contains(mousePos)) {
-        if (!verticalSolved) {
-          activeComponent = "vertical";
-        }
-        dragging = false;
-        return;
-      }
-
-      if (!solved && activeComponent !== null) {
-        if (activeComponent === "horizontal" && !horizontalSolved) {
-          dragging = true;
-          dragStart = CENTER;
-          dragEnd = mousePos;
-          studentHorizontalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
-        } else if (activeComponent === "vertical" && !verticalSolved) {
-          dragging = true;
-          dragStart = CENTER;
-          dragEnd = mousePos;
-          studentVerticalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
-        }
-      }
-    });
-
-    window.addEventListener("mouseup", (event) => {
-      mousePos = getMousePos(event);
-
-      if (dragging && activeComponent !== null) {
-        dragging = false;
-        dragEnd = mousePos;
-
-        if (activeComponent === "horizontal" && !horizontalSolved) {
-          studentHorizontalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
-
-          const result = isAnswerClose(studentHorizontalForce, targetHorizontalForce);
-
-          if (result.closeEnough) {
-            horizontalSolved = true;
-            studentHorizontalForce = copy(targetHorizontalForce);
-            activeComponent = null;
-          }
-        } else if (activeComponent === "vertical" && !verticalSolved) {
-          studentVerticalForce = componentForceFromDrag(dragStart, dragEnd, activeComponent);
-
-          const result = isAnswerClose(studentVerticalForce, targetVerticalForce);
-
-          if (result.closeEnough) {
-            verticalSolved = true;
-            studentVerticalForce = copy(targetVerticalForce);
-            activeComponent = null;
-          }
-        }
-      }
-    });
-
-    window.addEventListener("keydown", (event) => {
-      if (event.key === " ") {
-        newProblem();
-        event.preventDefault();
-      } else if (event.key.toLowerCase() === "r") {
-        resetCurrentProblem();
-      }
-    });
-
-    // ----------------------------
-    // Drawing
-    // ----------------------------
-
-    function drawFeedback() {
-      const solved = horizontalSolved && verticalSolved;
-      const feedbackY = HEIGHT - 90;
-
-      if (solved) {
-        drawText("Balanced! Both components are correct.", 30, feedbackY, 28, GREEN);
-        return;
-      }
-
-      if (activeComponent === null) {
-        if (horizontalSolved && !verticalSolved) {
-          drawText("Horizontal component complete. Now choose the vertical component.", 30, feedbackY, 20, BLACK);
-        } else if (verticalSolved && !horizontalSolved) {
-          drawText("Vertical component complete. Now choose the horizontal component.", 30, feedbackY, 20, BLACK);
-        } else {
-          drawText("Choose a component to draw.", 30, feedbackY, 20, BLACK);
-        }
-        return;
-      }
-
-      if (activeComponent === "horizontal") {
-        const result = isAnswerClose(studentHorizontalForce, targetHorizontalForce);
-        drawText(
-          `Drawing horizontal component.`,
-          30,
-          feedbackY,
-          20,
-          BLACK
-        );
-      } else if (activeComponent === "vertical") {
-        const result = isAnswerClose(studentVerticalForce, targetVerticalForce);
-        drawText(
-          `Drawing vertical component.`,
-          30,
-          feedbackY,
-          20,
-          BLACK
-        );
-      }
-    }
-
-    function drawStatus() {
-      const horizontalStatus = horizontalSolved ? "done" : "needed";
-      const verticalStatus = verticalSolved ? "done" : "needed";
-
-      drawText(
-        `Horizontal: ${horizontalStatus}    Vertical: ${verticalStatus}`,
-        30,
-        HEIGHT - 55,
-        24,
-        GRAY
-      );
-    }
-
-    function drawFrame() {
-      ctx.fillStyle = WHITE;
-      ctx.fillRect(0, 0, WIDTH, HEIGHT);
-
-      drawText("FBD Balance Trainer", 30, 25, 40, BLACK);
-      drawText("Draw the horizontal and vertical forces needed to balance the diagram.", 30, 70, 20, BLACK);
-      drawText("Click a component button, then drag from the block.", 30, 100, 20, BLACK);
-      drawText("Use Next Problem for a new FBD, or Reset to clear this attempt.", 30, 130, 20, BLACK);
-
-      drawBlock();
-
-      // Draw given forces
-      drawGivenForces(forces);
-
-      // Draw solved/student horizontal component
-      if (length(studentHorizontalForce) > 0) {
-        const color = horizontalSolved ? GREEN : ORANGE;
-        drawArrow(
-          CENTER,
-          studentHorizontalForce,
-          color,
-          `${length(studentHorizontalForce).toFixed(0)} N`,
-          5,
-          vec(0, 52)
-        );
-      }
-
-      // Draw solved/student vertical component
-      if (length(studentVerticalForce) > 0) {
-        const color = verticalSolved ? GREEN : ORANGE;
-        drawArrow(
-          CENTER,
-          studentVerticalForce,
-          color,
-          `${length(studentVerticalForce).toFixed(0)} N`,
-          5,
-          vec(52, 0)
-        );
-      }
-
-      horizontalButton.draw(activeComponent === "horizontal", horizontalSolved);
-      verticalButton.draw(activeComponent === "vertical", verticalSolved);
-      resetButton.draw(false, false);
-      nextProblemButton.draw(false, false);
-
-      drawFeedback();
-      drawStatus();
-    }
-
-    function animate() {
-      drawFrame();
-      requestAnimationFrame(animate);
-    }
-
-    requestAnimationFrame(animate);
   </script>
 </body>
 </html>
