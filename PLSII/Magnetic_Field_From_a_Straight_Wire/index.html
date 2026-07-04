@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Magnetic Field Around a Straight Wire</title>
+  <style>
+    :root {
+      --page-bg: #eef2f7;
+      --panel-bg: #ffffff;
+      --text: #172033;
+      --muted-text: #556179;
+      --border: #d7deea;
+      --primary-blue: #2563eb;
+      --primary-blue-dark: #1d4ed8;
+      --success-green: #15803d;
+      --warning-amber: #f59e0b;
+      --error-red: #dc2626;
+      --focus-amber: #fbbf24;
+      --header-bg: #111827;
+      --field-purple: #7e22ce;
+      --field-purple-light: #c084fc;
+      --wire-gray: #4b5563;
+      --surface-bg: #f8fafc;
+      --shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--page-bg);
+    }
+
+    a {
+      color: var(--primary-blue-dark);
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 1rem;
+      top: -4rem;
+      z-index: 100;
+      padding: 0.75rem 1rem;
+      color: #ffffff;
+      background: var(--primary-blue-dark);
+      border-radius: 0 0 0.5rem 0.5rem;
+      transition: top 0.15s ease;
+    }
+
+    .skip-link:focus {
+      top: 0;
+      outline: 4px solid var(--focus-amber);
+      outline-offset: 2px;
+    }
+
+    header {
+      color: #ffffff;
+      background: var(--header-bg);
+      padding: 2rem 1rem;
+      border-bottom: 5px solid var(--primary-blue);
+    }
+
+    header .header-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    h1,
+    h2,
+    h3 {
+      line-height: 1.2;
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 0.5rem;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+    }
+
+    header p {
+      max-width: 780px;
+      margin: 0;
+      color: #dbeafe;
+      font-size: 1.05rem;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    .card {
+      margin-bottom: 1.25rem;
+      padding: 1.25rem;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.9fr) minmax(320px, 1.35fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .controls-card {
+      position: sticky;
+      top: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .controls-card {
+        position: static;
+      }
+    }
+
+    fieldset {
+      margin: 0 0 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    fieldset:last-child {
+      margin-bottom: 0;
+    }
+
+    legend {
+      padding: 0 0.35rem;
+      font-weight: 750;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-weight: 650;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      min-height: 2.25rem;
+      accent-color: var(--primary-blue);
+    }
+
+    .range-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: -0.25rem;
+      color: var(--muted-text);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    input[type="checkbox"] {
+      width: 1.15rem;
+      height: 1.15rem;
+      accent-color: var(--primary-blue);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 2.5rem;
+      padding: 0.55rem 0.9rem;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    button.primary {
+      color: #ffffff;
+      background: var(--primary-blue);
+    }
+
+    button.primary:hover {
+      background: var(--primary-blue-dark);
+    }
+
+    button.secondary {
+      color: var(--primary-blue-dark);
+      background: #ffffff;
+      border-color: var(--primary-blue);
+    }
+
+    button.secondary:hover {
+      background: #eff6ff;
+    }
+
+    button.danger {
+      color: #ffffff;
+      background: var(--error-red);
+    }
+
+    button.danger:hover {
+      background: #b91c1c;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    canvas:focus-visible {
+      outline: 4px solid var(--focus-amber);
+      outline-offset: 3px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 0.65rem;
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 520px) {
+      .readout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .readout {
+      padding: 0.8rem;
+      background: var(--surface-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .readout .label {
+      display: block;
+      color: var(--muted-text);
+      font-size: 0.88rem;
+      font-weight: 650;
+    }
+
+    .readout .value {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+
+    .hint {
+      margin: 0.45rem 0 0;
+      color: var(--muted-text);
+      font-size: 0.95rem;
+    }
+
+    .check-row {
+      display: flex;
+      gap: 0.65rem;
+      align-items: center;
+      margin: 0.75rem 0;
+    }
+
+    .visual-panel {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 360px;
+      background: transparent;
+    }
+
+    .canvas-caption {
+      position: absolute;
+      right: 0.75rem;
+      bottom: 0.75rem;
+      max-width: min(380px, calc(100% - 1.5rem));
+      padding: 0.55rem 0.75rem;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .state-summary {
+      padding: 1rem;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--primary-blue);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+    }
+
+    caption {
+      margin-bottom: 0.55rem;
+      color: var(--muted-text);
+      font-weight: 650;
+      text-align: left;
+    }
+
+    th,
+    td {
+      padding: 0.7rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #eff6ff;
+      color: #1e3a8a;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .note-list {
+      margin: 0.5rem 0 0;
+      padding-left: 1.2rem;
+    }
+
+    .note-list li + li {
+      margin-top: 0.35rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header>
+    <div class="header-inner">
+      <h1>Magnetic Field Around a Straight Wire</h1>
+      <p>
+        Adjust the conventional current in a long straight wire and watch the surrounding magnetic field loops respond in a 3D-style view.
+      </p>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="card" aria-labelledby="how-to-use-heading">
+      <h2 id="how-to-use-heading">How to use</h2>
+      <p>
+        Use the current slider to change the current in the wire. The blue arrow shows the direction of conventional current.
+        The purple circular arrows show the direction and relative strength of the magnetic field.
+      </p>
+      <p>
+        The animation makes the field direction easier to see, but you can pause it, step it forward one frame at a time, or use the numeric table below the diagram instead. Keyboard users can tab to the sliders and buttons. On the canvas, use the arrow keys to rotate the view and Shift + arrow keys to make larger rotations.
+      </p>
+    </section>
+
+    <div class="layout">
+      <section class="card controls-card" aria-labelledby="controls-heading">
+        <h2 id="controls-heading">Controls</h2>
+
+        <fieldset>
+          <legend>Current</legend>
+          <label for="current-slider">Conventional current, I</label>
+          <input id="current-slider" type="range" min="-10" max="10" step="1" value="8" aria-describedby="current-help" />
+          <div class="range-labels" aria-hidden="true">
+            <span>-10 A</span>
+            <span>0 A</span>
+            <span>+10 A</span>
+          </div>
+          <p id="current-help" class="hint">
+            Negative values reverse the blue current arrow and the purple magnetic field direction.
+          </p>
+
+          <div class="button-row" aria-label="Current shortcuts">
+            <button type="button" class="secondary" id="reverse-current-button">Reverse current</button>
+            <button type="button" class="secondary" id="zero-current-button">Set current to 0 A</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>View</legend>
+          <label for="yaw-slider">Horizontal rotation</label>
+          <input id="yaw-slider" type="range" min="-70" max="70" step="1" value="-28" />
+
+          <label for="pitch-slider">Vertical tilt</label>
+          <input id="pitch-slider" type="range" min="-20" max="65" step="1" value="34" />
+
+          <div class="button-row" aria-label="View shortcuts">
+            <button type="button" class="secondary" id="left-button">Rotate left</button>
+            <button type="button" class="secondary" id="right-button">Rotate right</button>
+            <button type="button" class="secondary" id="top-button">Top view</button>
+            <button type="button" class="secondary" id="side-button">Head-on view</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Animation</legend>
+          <div class="check-row">
+            <input id="show-grid-checkbox" type="checkbox" unchecked />
+            <label for="show-grid-checkbox">Show reference floor grid</label>
+          </div>
+          <div class="button-row">
+            <button type="button" class="primary" id="play-pause-button">Pause</button>
+            <button type="button" class="secondary" id="step-button">Step</button>
+            <button type="button" class="danger" id="reset-button">Reset</button>
+          </div>
+        </fieldset>
+      </section>
+
+      <section class="visual-panel" aria-labelledby="visual-heading">
+        <div class="card">
+          <h2 id="visual-heading">Interactive field region</h2>
+          <div class="canvas-wrap">
+            <canvas id="field-canvas" width="960" height="620" tabindex="0" role="img" aria-describedby="canvas-description"></canvas>
+          </div>
+          <p id="canvas-description" class="sr-only">
+            A long straight wire is drawn through the center of a three-dimensional coordinate view. A blue arrow on the wire indicates conventional current direction. Purple circular arrows wrap around the wire to indicate the magnetic field direction. The table below gives numerical field values at several radii.
+          </p>
+        </div>
+
+        <div class="card" aria-labelledby="readouts-heading">
+          <h2 id="readouts-heading">Informational Readout</h2>
+          <div class="state-summary" id="state-summary" aria-live="polite">
+            Current is 8 amperes upward. Magnetic field circles counterclockwise when viewed from above. The closest displayed radius has a field of 160 microtesla.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" aria-labelledby="table-heading">
+      <h2 id="table-heading">Magnetic field data table</h2>
+      <p>
+        The table uses the absolute value of current, so direction is handled separately by the right-hand rule. 
+        For direction, "from above" means when viewed from the current coming directly at you.
+      </p>
+      <div style="overflow-x: auto;">
+        <table>
+          <caption>Calculated magnetic field values for the current setting</caption>
+          <thead>
+            <tr>
+              <th scope="col">Distance from wire</th>
+              <th scope="col">Magnetic field magnitude</th>
+              <th scope="col">Relative visual strength</th>
+              <th scope="col">Direction for current setting</th>
+            </tr>
+          </thead>
+          <tbody id="field-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="notes-heading">
+      <h2 id="notes-heading">Physics notes</h2>
+      <ul class="note-list">
+        <li>The magnetic field is strongest close to the wire and gets weaker as distance from the wire increases.</li>
+        <li>Doubling the current doubles the magnetic field at every distance shown.</li>
+        <li>Use the right-hand rule: point your right thumb along the conventional current, and your fingers curl in the magnetic field direction.</li>
+        <li>At zero current, the field loops fade because an ordinary wire with no current would not create a magnetic field.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("field-canvas");
+    const ctx = canvas.getContext("2d");
+
+    const currentSlider = document.getElementById("current-slider");
+    const yawSlider = document.getElementById("yaw-slider");
+    const pitchSlider = document.getElementById("pitch-slider");
+    const showGridCheckbox = document.getElementById("show-grid-checkbox");
+
+    const reverseCurrentButton = document.getElementById("reverse-current-button");
+    const zeroCurrentButton = document.getElementById("zero-current-button");
+    const leftButton = document.getElementById("left-button");
+    const rightButton = document.getElementById("right-button");
+    const topButton = document.getElementById("top-button");
+    const sideButton = document.getElementById("side-button");
+    const playPauseButton = document.getElementById("play-pause-button");
+    const stepButton = document.getElementById("step-button");
+    const resetButton = document.getElementById("reset-button");
+
+    const stateSummary = document.getElementById("state-summary");
+    const tableBody = document.getElementById("field-table-body");
+
+    const state = {
+      current: Number(currentSlider.value),
+      yaw: Number(yawSlider.value),
+      pitch: Number(pitchSlider.value),
+      phase: 0,
+      running: true,
+      lastTimestamp: 0
+    };
+
+    const radiiCm = [1, 2, 4, 6];
+    const loopZPositions = [-2.3, -0.75, 0.75, 2.3];
+
+    function degToRad(degrees) {
+      return degrees * Math.PI / 180;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function magneticFieldMicroTesla(currentAmps, radiusCm) {
+      const radiusMeters = radiusCm / 100;
+      return 0.2 * Math.abs(currentAmps) / radiusMeters;
+    }
+
+    function directionText(current) {
+      if (current > 0) {
+        return "Counterclockwise from above";
+      }
+      if (current < 0) {
+        return "Clockwise from above";
+      }
+      return "No field direction";
+    }
+
+    function currentDirectionText(current) {
+      if (current > 0) return "upward";
+      if (current < 0) return "downward";
+      return "zero";
+    }
+
+    function project(point) {
+      const yaw = degToRad(state.yaw);
+      const pitch = degToRad(state.pitch);
+
+      const cosYaw = Math.cos(yaw);
+      const sinYaw = Math.sin(yaw);
+
+      // Horizontal rotation now turns the entire scene around a vertical axis,
+      // so the wire and current arrow move with the grid and field loops.
+      const x1 = point.x * cosYaw + point.z * sinYaw;
+      const y1 = point.y;
+      const z1 = -point.x * sinYaw + point.z * cosYaw;
+
+      const cosPitch = Math.cos(pitch);
+      const sinPitch = Math.sin(pitch);
+      const y2 = y1 * cosPitch - z1 * sinPitch;
+      const z2 = y1 * sinPitch + z1 * cosPitch;
+
+      const perspective = 1 / (1 + 0.08 * z2);
+      const scale = 68 * perspective;
+
+      return {
+        x: canvas.width / 2 + x1 * scale,
+        y: canvas.height / 2 + y2 * scale,
+        depth: z2,
+        scale
+      };
+    }
+
+    function drawLine3D(a, b, options = {}) {
+      const pa = project(a);
+      const pb = project(b);
+      ctx.save();
+      ctx.strokeStyle = options.strokeStyle || "#111827";
+      ctx.lineWidth = options.lineWidth || 2;
+      ctx.globalAlpha = options.alpha ?? 1;
+      ctx.setLineDash(options.dash || []);
+      ctx.beginPath();
+      ctx.moveTo(pa.x, pa.y);
+      ctx.lineTo(pb.x, pb.y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawArrow2D(start, end, color, lineWidth, label, labelOffset = { x: 0, y: 0 }) {
+      const angle = Math.atan2(end.y - start.y, end.x - start.x);
+      const headLength = Math.max(12, lineWidth * 4.2);
+
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(end.x, end.y);
+      ctx.lineTo(end.x - headLength * Math.cos(angle - Math.PI / 6), end.y - headLength * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(end.x - headLength * Math.cos(angle + Math.PI / 6), end.y - headLength * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+
+      if (label) {
+        ctx.font = "700 20px system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, (start.x + end.x) / 2 + labelOffset.x, (start.y + end.y) / 2 + labelOffset.y);
+      }
+      ctx.restore();
+    }
+
+    function drawCurrentArrow() {
+      const current = state.current;
+      const direction = current >= 0 ? 1 : -1;
+      const magnitude = Math.abs(current);
+      const alpha = magnitude === 0 ? 0.24 : 1;
+      const zStart = direction > 0 ? -2.85 : 2.85;
+      const zEnd = direction > 0 ? 2.85 : -2.85;
+      const start = project({ x: 0, y: 0, z: zStart });
+      const end = project({ x: 0, y: 0, z: zEnd });
+      const lineWidth = 8 + 0.28 * magnitude;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      drawArrow2D(start, end, "#2563eb", lineWidth, "I", { x: 25, y: 0 });
+      ctx.restore();
+    }
+
+    function drawWire() {
+      drawLine3D(
+        { x: 0, y: 0, z: -3.2 },
+        { x: 0, y: 0, z: 3.2 },
+        { strokeStyle: "#4b5563", lineWidth: 18, alpha: 0.35 }
+      );
+      drawLine3D(
+        { x: 0, y: 0, z: -3.2 },
+        { x: 0, y: 0, z: 3.2 },
+        { strokeStyle: "#111827", lineWidth: 3, alpha: 0.65 }
+      );
+    }
+
+    function drawGrid() {
+      if (!showGridCheckbox.checked) return;
+
+      ctx.save();
+      for (let i = -4; i <= 4; i++) {
+        const major = i === 0;
+        drawLine3D(
+          { x: -4, y: i, z: -3.05 },
+          { x: 4, y: i, z: -3.05 },
+          { strokeStyle: major ? "#94a3b8" : "#cbd5e1", lineWidth: major ? 1.8 : 1, alpha: major ? 0.65 : 0.5 }
+        );
+        drawLine3D(
+          { x: i, y: -4, z: -3.05 },
+          { x: i, y: 4, z: -3.05 },
+          { strokeStyle: major ? "#94a3b8" : "#cbd5e1", lineWidth: major ? 1.8 : 1, alpha: major ? 0.65 : 0.5 }
+        );
+      }
+      ctx.restore();
+    }
+
+    function drawLoop(radius, z, index, pass = "all") {
+      const current = state.current;
+      const absCurrent = Math.abs(current);
+      const fieldFraction = clamp(absCurrent / 20, 0, 1);
+      const lineWidth = 1.5 + fieldFraction * (7 / radius);
+      const alpha = absCurrent === 0 ? 0.08 : 0.23 + 0.58 * fieldFraction;
+      const segments = 160;
+      const frontSegments = [];
+      const backSegments = [];
+
+      for (let i = 0; i < segments; i++) {
+        const theta1 = 2 * Math.PI * i / segments;
+        const theta2 = 2 * Math.PI * (i + 1) / segments;
+        const p1 = project({ x: radius * Math.cos(theta1), y: radius * Math.sin(theta1), z });
+        const p2 = project({ x: radius * Math.cos(theta2), y: radius * Math.sin(theta2), z });
+        const wireDepth = project({ x: 0, y: 0, z }).depth;
+        const segmentDepth = (p1.depth + p2.depth) / 2;
+        const segment = { p1, p2 };
+
+        // In this projection, smaller depth values are closer to the viewer.
+        // Splitting each loop this way lets the field line pass visually in
+        // front of the wire on the near side and behind it on the far side.
+        if (segmentDepth < wireDepth) {
+          frontSegments.push(segment);
+        } else {
+          backSegments.push(segment);
+        }
+      }
+
+      function strokeSegments(segmentsToDraw) {
+        if (!segmentsToDraw.length) return;
+        ctx.save();
+        ctx.strokeStyle = "#7e22ce";
+        ctx.lineWidth = lineWidth;
+        ctx.globalAlpha = alpha;
+        ctx.lineCap = "round";
+        segmentsToDraw.forEach(segment => {
+          ctx.beginPath();
+          ctx.moveTo(segment.p1.x, segment.p1.y);
+          ctx.lineTo(segment.p2.x, segment.p2.y);
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      if (pass === "back") {
+        strokeSegments(backSegments);
+      } else if (pass === "front") {
+        strokeSegments(frontSegments);
+      } else {
+        strokeSegments(backSegments);
+        strokeSegments(frontSegments);
+      }
+
+      if (absCurrent === 0) return;
+
+      const sign = current > 0 ? 1 : -1;
+      const arrowCount = radius < 1.6 ? 3 : 4;
+      for (let a = 0; a < arrowCount; a++) {
+        const baseTheta = state.phase * sign + index * 0.48 + a * (2 * Math.PI / arrowCount);
+        const theta1 = baseTheta;
+        const theta2 = baseTheta + sign * 0.18;
+        const p1 = project({ x: radius * Math.cos(theta1), y: radius * Math.sin(theta1), z });
+        const p2 = project({ x: radius * Math.cos(theta2), y: radius * Math.sin(theta2), z });
+        const wireDepth = project({ x: 0, y: 0, z }).depth;
+        const arrowDepth = (p1.depth + p2.depth) / 2;
+        const isFront = arrowDepth < wireDepth;
+
+        if ((pass === "front" && isFront) || (pass === "back" && !isFront) || pass === "all") {
+          drawArrow2D(p1, p2, "#7e22ce", Math.max(2.2, lineWidth * 0.9), "");
+        }
+      }
+    }
+
+    function roundedRect(context, x, y, width, height, radius) {
+      context.beginPath();
+      context.moveTo(x + radius, y);
+      context.lineTo(x + width - radius, y);
+      context.quadraticCurveTo(x + width, y, x + width, y + radius);
+      context.lineTo(x + width, y + height - radius);
+      context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      context.lineTo(x + radius, y + height);
+      context.quadraticCurveTo(x, y + height, x, y + height - radius);
+      context.lineTo(x, y + radius);
+      context.quadraticCurveTo(x, y, x + radius, y);
+      context.closePath();
+    }
+
+    function drawScene() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      drawGrid();
+
+      const loops = [];
+      loopZPositions.forEach((z, zIndex) => {
+        radiiCm.forEach((radiusCm, rIndex) => {
+          const radiusWorld = 0.62 + rIndex * 0.55;
+          loops.push({ radius: radiusWorld, z, sort: project({ x: 0, y: radiusWorld, z }).depth, index: zIndex + rIndex });
+        });
+      });
+
+      loops.sort((a, b) => a.sort - b.sort);
+      loops.forEach(loop => drawLoop(loop.radius, loop.z, loop.index, "back"));
+
+      drawWire();
+      drawCurrentArrow();
+
+      loops.forEach(loop => drawLoop(loop.radius, loop.z, loop.index, "front"));
+    }
+
+    function updateReadouts() {
+      const current = state.current;
+      const direction = directionText(current);
+      const nearField = magneticFieldMicroTesla(current, 1);
+      const currentText = `${current} A`;
+      const nearText = `${Math.round(nearField)} μT`;
+
+
+      const fieldSentence = current === 0
+        ? "No magnetic field is shown because the current is zero."
+        : `Magnetic field circles ${direction.toLowerCase()}.<br><br>The closest displayed radius has a field of ${nearText}.`;
+
+      stateSummary.innerHTML = `Current is ${Math.abs(current)} amperes ${currentDirectionText(current)}.<br><br>${fieldSentence}`;
+      updateTable();
+    }
+
+    function updateTable() {
+      const direction = directionText(state.current);
+      const maxField = magneticFieldMicroTesla(Math.max(Math.abs(state.current), 1), 1);
+      tableBody.innerHTML = "";
+
+      radiiCm.forEach(radius => {
+        const field = magneticFieldMicroTesla(state.current, radius);
+        const relativePercent = state.current === 0 ? 0 : Math.round(100 * field / maxField);
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${radius} cm</td>
+          <td>${field.toFixed(field >= 10 ? 0 : 1)} μT</td>
+          <td>${relativePercent}% of the closest shown field</td>
+          <td>${direction}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function syncStateFromInputs() {
+      state.current = Number(currentSlider.value);
+      state.yaw = Number(yawSlider.value);
+      state.pitch = Number(pitchSlider.value);
+      updateReadouts();
+      drawScene();
+    }
+
+    function setCurrent(value) {
+      currentSlider.value = String(clamp(value, Number(currentSlider.min), Number(currentSlider.max)));
+      syncStateFromInputs();
+    }
+
+    function setView(yaw, pitch) {
+      yawSlider.value = String(clamp(yaw, Number(yawSlider.min), Number(yawSlider.max)));
+      pitchSlider.value = String(clamp(pitch, Number(pitchSlider.min), Number(pitchSlider.max)));
+      syncStateFromInputs();
+    }
+
+    function animationLoop(timestamp) {
+      if (!state.lastTimestamp) {
+        state.lastTimestamp = timestamp;
+      }
+      const elapsed = timestamp - state.lastTimestamp;
+      state.lastTimestamp = timestamp;
+
+      if (state.running) {
+        state.phase += elapsed * 0.0014;
+        drawScene();
+      }
+
+      requestAnimationFrame(animationLoop);
+    }
+
+    currentSlider.addEventListener("input", syncStateFromInputs);
+    yawSlider.addEventListener("input", syncStateFromInputs);
+    pitchSlider.addEventListener("input", syncStateFromInputs);
+    showGridCheckbox.addEventListener("change", syncStateFromInputs);
+
+    reverseCurrentButton.addEventListener("click", () => {
+      const reversed = state.current === 0 ? 8 : -state.current;
+      setCurrent(reversed);
+    });
+
+    zeroCurrentButton.addEventListener("click", () => setCurrent(0));
+    leftButton.addEventListener("click", () => setView(state.yaw - 10, state.pitch));
+    rightButton.addEventListener("click", () => setView(state.yaw + 10, state.pitch));
+    topButton.addEventListener("click", () => setView(0, 65));
+    sideButton.addEventListener("click", () => setView(0, 0));
+
+    playPauseButton.addEventListener("click", () => {
+      state.running = !state.running;
+      playPauseButton.textContent = state.running ? "Pause" : "Play";
+      drawScene();
+    });
+
+    stepButton.addEventListener("click", () => {
+      state.running = false;
+      playPauseButton.textContent = "Play";
+      state.phase += 0.22;
+      drawScene();
+    });
+
+    resetButton.addEventListener("click", () => {
+      currentSlider.value = "8";
+      yawSlider.value = "-28";
+      pitchSlider.value = "34";
+      showGridCheckbox.checked = true;
+      state.phase = 0;
+      state.running = true;
+      playPauseButton.textContent = "Pause";
+      syncStateFromInputs();
+    });
+
+    canvas.addEventListener("keydown", event => {
+      const smallStep = event.shiftKey ? 10 : 3;
+      let handled = true;
+
+      if (event.key === "ArrowLeft") {
+        setView(state.yaw - smallStep, state.pitch);
+      } else if (event.key === "ArrowRight") {
+        setView(state.yaw + smallStep, state.pitch);
+      } else if (event.key === "ArrowUp") {
+        setView(state.yaw, state.pitch + smallStep);
+      } else if (event.key === "ArrowDown") {
+        setView(state.yaw, state.pitch - smallStep);
+      } else {
+        handled = false;
+      }
+
+      if (handled) {
+        event.preventDefault();
+      }
+    });
+
+    syncStateFromInputs();
+    requestAnimationFrame(animationLoop);
+  </script>
+</body>
+</html>
