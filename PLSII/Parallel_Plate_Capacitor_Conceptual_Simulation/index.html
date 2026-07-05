@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Parallel Plate Capacitor Explorer</title>
+  <style>
+    :root {
+      --page-bg: #f3f4f6;
+      --panel-bg: #ffffff;
+      --text: #111827;
+      --muted-text: #4b5563;
+      --border: #d1d5db;
+      --primary-blue: #2563eb;
+      --primary-blue-dark: #1d4ed8;
+      --success-green: #15803d;
+      --warning-amber: #d97706;
+      --error-red: #dc2626;
+      --focus-amber: #f59e0b;
+      --header-bg: #111827;
+      --header-text: #ffffff;
+      --canvas-bg: #f8fafc;
+      --positive-blue: #2563eb;
+      --negative-red: #dc2626;
+      --neutral-gray: #6b7280;
+      --field-green: #15803d;
+      --potential-purple: #7c3aed;
+      --shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--page-bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -48px;
+      left: 1rem;
+      z-index: 100;
+      padding: 0.75rem 1rem;
+      color: var(--header-bg);
+      background: var(--focus-amber);
+      border-radius: 0 0 0.5rem 0.5rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .skip-link:focus {
+      top: 0;
+      outline: 3px solid #ffffff;
+      outline-offset: 2px;
+    }
+
+    header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 1.5rem;
+    }
+
+    header .header-inner {
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    header h1 {
+      margin: 0 0 0.4rem;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      line-height: 1.1;
+    }
+
+    header p {
+      max-width: 850px;
+      margin: 0;
+      color: #d1d5db;
+      font-size: 1.05rem;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+
+    .card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+
+    .card h2,
+    .card h3 {
+      margin-top: 0;
+      line-height: 1.2;
+    }
+
+    .how-to-use {
+      border-left: 6px solid var(--primary-blue);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 390px) 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    @media (max-width: 950px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    fieldset {
+      margin: 0 0 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    legend {
+      padding: 0 0.4rem;
+      font-weight: 800;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    input[type="number"],
+    select {
+      width: 100%;
+      min-height: 2.5rem;
+      padding: 0.5rem 0.65rem;
+      color: var(--text);
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 0.55rem;
+      font: inherit;
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
+      transform: translateY(0.1rem);
+      margin-right: 0.45rem;
+    }
+
+    input:focus-visible,
+    select:focus-visible,
+    button:focus-visible {
+      outline: 4px solid var(--focus-amber);
+      outline-offset: 3px;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .control-value {
+      min-width: 6.5rem;
+      padding: 0.35rem 0.5rem;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+    }
+
+
+    .setting-group {
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .setting-group.fixed-setting {
+      background: #fffbeb;
+      border-color: var(--warning-amber);
+    }
+
+    .fixed-note {
+      display: none;
+      margin: 0.35rem 0 0;
+      color: #92400e;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    .fixed-setting .fixed-note {
+      display: block;
+    }
+
+    .fixed-setting input[type="range"] {
+      accent-color: var(--warning-amber);
+    }
+
+    .hint {
+      margin: 0.3rem 0 0;
+      color: var(--muted-text);
+      font-size: 0.93rem;
+    }
+
+    .radio-option,
+    .checkbox-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.25rem;
+      margin: 0.55rem 0;
+    }
+
+    .radio-option label,
+    .checkbox-option label {
+      display: inline;
+      margin: 0;
+      font-weight: 650;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 0.75rem;
+    }
+
+    button {
+      min-height: 2.6rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 0.65rem;
+      border: 1px solid transparent;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .primary-button {
+      color: #ffffff;
+      background: var(--primary-blue);
+      border-color: var(--primary-blue);
+    }
+
+    .primary-button:hover {
+      background: var(--primary-blue-dark);
+      border-color: var(--primary-blue-dark);
+    }
+
+    .secondary-button {
+      color: var(--primary-blue);
+      background: #ffffff;
+      border-color: var(--primary-blue);
+    }
+
+    .secondary-button:hover {
+      background: #eff6ff;
+    }
+
+    .danger-button {
+      color: #ffffff;
+      background: var(--error-red);
+      border-color: var(--error-red);
+    }
+
+    .danger-button:hover {
+      background: #b91c1c;
+      border-color: #b91c1c;
+    }
+
+    .simulation-card {
+      min-width: 0;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      background: var(--canvas-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: var(--canvas-bg);
+    }
+
+    .canvas-caption {
+      margin: 0.6rem 0 0;
+      color: var(--muted-text);
+      font-size: 0.95rem;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(130px, 1fr));
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 900px) {
+      .status-grid {
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+      }
+    }
+
+    @media (max-width: 520px) {
+      .status-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .status-box {
+      padding: 0.8rem;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .status-label {
+      margin: 0;
+      color: var(--muted-text);
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .status-value {
+      margin: 0.2rem 0 0;
+      font-size: 1.25rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .readout {
+      padding: 1rem;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .readout p {
+      margin: 0;
+    }
+
+    .readout p + p {
+      margin-top: 0.75rem;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 620px;
+      background: #ffffff;
+    }
+
+    th,
+    td {
+      padding: 0.7rem;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f3f4f6;
+      font-weight: 900;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .positive {
+      color: var(--positive-blue);
+      font-weight: 900;
+    }
+
+    .negative {
+      color: var(--negative-red);
+      font-weight: 900;
+    }
+
+    .neutral {
+      color: var(--neutral-gray);
+      font-weight: 900;
+    }
+
+    .note-list {
+      margin-bottom: 0;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header>
+    <div class="header-inner">
+      <h1>Parallel Plate Capacitor Explorer</h1>
+      <p>
+        Explore how plate charge, electric field, potential difference, capacitance, and plate separation
+        are connected for an ideal parallel plate capacitor.
+      </p>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="card how-to-use" aria-labelledby="how-to-use-heading">
+      <h2 id="how-to-use-heading">How to use</h2>
+      <p>
+        Choose which quantity to hold fixed, then use the three sliders to explore how plate charge, plate separation, and potential difference are linked. The fixed quantity is highlighted in amber, but you can still adjust it to choose a new fixed value.
+      </p>
+      <p>
+        Toggle electric field lines and electric potential bands to compare the two representations.
+        The capacitor model used here treats the plates as ideal and ignores edge effects, so the field between the
+        plates is drawn as uniform.
+      </p>
+    </section>
+
+    <div class="layout">
+      <section class="card controls-card" aria-labelledby="controls-heading">
+        <h2 id="controls-heading">Controls</h2>
+
+        <fieldset>
+          <legend>Capacitor mode</legend>
+
+          <div class="radio-option">
+            <input type="radio" id="mode-manual" name="mode" value="distance" checked>
+            <label for="mode-manual">Hold distance constant</label>
+          </div>
+          <p class="hint">The plate separation is held fixed. Changing charge or potential difference updates the other quantity, within the allowed range.</p>
+
+          <div class="radio-option">
+            <input type="radio" id="mode-field" name="mode" value="field">
+            <label for="mode-field">Hold electric field/charge on plates constant</label>
+          </div>
+          <p class="hint">Choose the plate charge, then move the plates. The charge and electric field stay fixed while the potential difference changes.</p>
+
+          <div class="radio-option">
+            <input type="radio" id="mode-voltage" name="mode" value="voltage">
+            <label for="mode-voltage">Hold potential difference constant</label>
+          </div>
+          <p class="hint">The potential difference stays fixed. Changing distance or charge updates the other quantity, within the allowed range.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Plate settings</legend>
+
+          <div id="charge-control-group" class="setting-group">
+            <label for="charge-slider">Left plate charge, Q</label>
+            <div class="control-row">
+              <input id="charge-slider" type="range" min="-20" max="20" step="any" value="6">
+              <output id="charge-output" class="control-value" for="charge-slider">+6.0 nC</output>
+            </div>
+            <p class="hint">
+              The right plate always has equal and opposite charge. Negative Q makes the left plate negative.
+            </p>
+            <p class="fixed-note">Fixed in the current mode. Move this slider to choose a new fixed charge.</p>
+          </div>
+
+          <div id="distance-control-group" class="setting-group">
+            <label for="distance-slider">Plate separation, d</label>
+            <div class="control-row">
+              <input id="distance-slider" type="range" min="2.5" max="10" step="any" value="5">
+              <output id="distance-output" class="control-value" for="distance-slider">5.0 cm</output>
+            </div>
+            <p class="hint">
+              Moving the plates changes the capacitance. In the ideal model, C = ε₀A/d.
+            </p>
+            <p class="fixed-note">Fixed in the current mode. Move this slider to choose a new fixed distance.</p>
+          </div>
+
+          <div id="constant-voltage-group" class="setting-group">
+            <label for="voltage-slider">Potential difference, ΔV</label>
+            <div class="control-row">
+              <input id="voltage-slider" type="range" min="-225887" max="225887" step="any" value="33883">
+              <output id="voltage-output" class="control-value" for="voltage-slider">+34.0 kV</output>
+            </div>
+            <p class="hint">
+              The sign of ΔV sets which plate is at higher electric potential.
+            </p>
+            <p class="fixed-note">Fixed in the current mode. Move this slider to choose a new fixed potential difference.</p>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Visual display</legend>
+
+          <div class="checkbox-option">
+            <input type="checkbox" id="show-field" checked>
+            <label for="show-field">Show electric field lines</label>
+          </div>
+
+          <div class="checkbox-option">
+            <input type="checkbox" id="show-potential" checked>
+            <label for="show-potential">Show electric potential bands</label>
+          </div>
+
+          <div class="checkbox-option">
+            <input type="checkbox" id="show-charges" checked>
+            <label for="show-charges">Show plate charge symbols</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Reset</legend>
+          <p class="hint">
+            Return the capacitor to the starting mode, plate charge, plate separation, and display settings.
+          </p>
+          <div class="button-row">
+            <button type="button" id="reset-button" class="danger-button">Reset</button>
+          </div>
+        </fieldset>
+      </section>
+
+      <section class="card simulation-card" aria-labelledby="simulation-heading">
+        <h2 id="simulation-heading">Interactive capacitor region</h2>
+
+        <div class="canvas-wrap">
+          <canvas id="capacitor-canvas" width="820" height="760" aria-describedby="canvas-description"></canvas>
+        </div>
+
+        <p id="canvas-description" class="canvas-caption">
+          Canvas showing two vertical capacitor plates, optional field arrows, optional potential bands, and an aligned potential-versus-position plot.
+        </p>
+
+        <div class="status-grid" aria-label="Current numeric values">
+          <div class="status-box">
+            <p class="status-label">Capacitance</p>
+            <p id="capacitance-status" class="status-value">1.77 pF</p>
+          </div>
+          <div class="status-box">
+            <p class="status-label">Electric field</p>
+            <p id="field-status" class="status-value">67.8 kV/m</p>
+          </div>
+          <div class="status-box">
+            <p class="status-label">Potential difference</p>
+            <p id="voltage-status" class="status-value">3.39 kV</p>
+          </div>
+          <div class="status-box">
+            <p class="status-label">Left plate charge</p>
+            <p id="charge-status" class="status-value">+6.0 nC</p>
+          </div>
+        </div>
+
+        <fieldset class="card" aria-labelledby="readout-heading">
+          <h2 id="readout-heading">Informational Readout</h2>
+          <div id="state-readout" class="readout" aria-live="polite"></div>
+        </fieldset>
+
+        <fieldset class="card" aria-labelledby="table-heading">
+          <h2 id="table-heading">Data table</h2>
+          <div class="table-wrap">
+            <table>
+              <caption class="sr-only">
+                Current capacitor values calculated from the ideal parallel plate capacitor model.
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Quantity</th>
+                  <th scope="col">Current value</th>
+                  <th scope="col">What it means in this model</th>
+                </tr>
+              </thead>
+              <tbody id="data-table-body"></tbody>
+            </table>
+          </div>
+        </fieldset>
+      </section>
+    </div>
+
+    
+
+    <section class="card" aria-labelledby="notes-heading">
+      <h2 id="notes-heading">Physics notes</h2>
+      <ul class="note-list">
+        <li>
+          This model uses a fixed plate area of 1.0 m² so the trends are easy to see. Edge effects are ignored. The sliders use fixed classroom-friendly ranges: d = 2.5–10 cm, Q = −20 to +20 nC, and ΔV is set by those limits.
+        </li>
+        <li>
+          In hold distance constant mode, changing either charge or potential difference updates the other so the plate spacing stays fixed.
+        </li>
+        <li>
+          If potential difference is held constant, moving the plates closer together increases capacitance, electric field strength, and charge magnitude.
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <script>
+    const EPSILON_0 = 8.854e-12;
+    const PLATE_AREA = 1.0;
+    const DEFAULTS = {
+      mode: "distance",
+      chargeNC: 6,
+      distanceCM: 5,
+      voltageV: 33883,
+      showField: true,
+      showPotential: true,
+      showCharges: true
+    };
+
+    const canvas = document.getElementById("capacitor-canvas");
+    const ctx = canvas.getContext("2d");
+
+    const modeInputs = Array.from(document.querySelectorAll("input[name='mode']"));
+    const chargeSlider = document.getElementById("charge-slider");
+    const distanceSlider = document.getElementById("distance-slider");
+    const voltageSlider = document.getElementById("voltage-slider");
+
+
+    const chargeOutput = document.getElementById("charge-output");
+    const distanceOutput = document.getElementById("distance-output");
+    const voltageOutput = document.getElementById("voltage-output");
+
+    const chargeControlGroup = document.getElementById("charge-control-group");
+    const distanceControlGroup = document.getElementById("distance-control-group");
+    const constantVoltageGroup = document.getElementById("constant-voltage-group");
+
+    const showFieldInput = document.getElementById("show-field");
+    const showPotentialInput = document.getElementById("show-potential");
+    const showChargesInput = document.getElementById("show-charges");
+
+    const resetButton = document.getElementById("reset-button");
+
+    const capacitanceStatus = document.getElementById("capacitance-status");
+    const fieldStatus = document.getElementById("field-status");
+    const voltageStatus = document.getElementById("voltage-status");
+    const chargeStatus = document.getElementById("charge-status");
+    const stateReadout = document.getElementById("state-readout");
+    const dataTableBody = document.getElementById("data-table-body");
+
+    let lastDriverByMode = {
+      distance: "charge",
+      field: "distance",
+      voltage: "distance"
+    };
+
+    let isSyncingSliders = false;
+
+
+    function getSelectedMode() {
+      const checked = modeInputs.find(input => input.checked);
+      return checked ? checked.value : "distance";
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function signedNumber(value, digits = 1) {
+      const fixed = Number(value).toFixed(digits);
+      return value > 0 ? `+${fixed}` : fixed;
+    }
+
+    function formatCharge(nC) {
+      if (Math.abs(nC) < 0.05) {
+        return "0.0 nC";
+      }
+      return `${signedNumber(nC, 1)} nC`;
+    }
+
+    function formatDistance(cm) {
+      return `${Number(cm).toFixed(1)} cm`;
+    }
+
+    function formatVoltage(volts) {
+      const abs = Math.abs(volts);
+      const sign = volts > 0 ? "+" : volts < 0 ? "−" : "";
+
+      if (abs >= 1000) {
+        return `${sign}${(abs / 1000).toFixed(2)} kV`;
+      }
+
+      return `${sign}${abs.toFixed(0)} V`;
+    }
+
+    function formatField(field) {
+      const abs = Math.abs(field);
+      const sign = field > 0 ? "+" : field < 0 ? "−" : "";
+
+      if (abs >= 1000000) {
+        return `${sign}${(abs / 1000000).toFixed(2)} MV/m`;
+      }
+
+      if (abs >= 1000) {
+        return `${sign}${(abs / 1000).toFixed(1)} kV/m`;
+      }
+
+      return `${sign}${abs.toFixed(0)} V/m`;
+    }
+
+    function formatCapacitance(farads) {
+      const pF = farads * 1e12;
+      return `${pF.toFixed(2)} pF`;
+    }
+
+    function setPhysicalSliderRanges() {
+      const voltageLimit = voltageFromChargeAndDistance(Number(chargeSlider.max), Number(distanceSlider.max));
+      const roundedLimit = Math.round(Math.abs(voltageLimit));
+
+      voltageSlider.min = String(-roundedLimit);
+      voltageSlider.max = String(roundedLimit);
+    }
+
+    function setSliderToValue(slider, value) {
+      if (!Number.isFinite(value)) {
+        return Number(slider.value);
+      }
+
+      const min = Number(slider.min);
+      const max = Number(slider.max);
+      const clampedValue = clamp(value, min, max);
+      slider.value = String(clampedValue);
+      return Number(slider.value);
+    }
+
+    function sortedRange(a, b) {
+      return a <= b ? [a, b] : [b, a];
+    }
+
+    function clampToRange(value, range) {
+      return clamp(value, range[0], range[1]);
+    }
+
+    function voltageFromChargeAndDistance(chargeNC, distanceCM) {
+      const chargeC = chargeNC * 1e-9;
+      const distanceM = distanceCM / 100;
+      return (chargeC * distanceM) / (EPSILON_0 * PLATE_AREA);
+    }
+
+    function chargeFromVoltageAndDistance(voltage, distanceCM) {
+      const distanceM = distanceCM / 100;
+      return ((EPSILON_0 * PLATE_AREA * voltage) / distanceM) * 1e9;
+    }
+
+    function distanceFromChargeAndVoltage(chargeNC, voltage) {
+      const chargeC = chargeNC * 1e-9;
+
+      if (Math.abs(chargeC) < 1e-15 || Math.abs(voltage) < 1e-9) {
+        return null;
+      }
+
+      const distanceM = (EPSILON_0 * PLATE_AREA * voltage) / chargeC;
+
+      if (distanceM <= 0) {
+        return null;
+      }
+
+      return distanceM * 100;
+    }
+
+    function allowedVoltageRangeForFixedDistance(distanceCM) {
+      const maxCharge = Number(chargeSlider.max);
+      const maxVoltage = Math.abs(voltageFromChargeAndDistance(maxCharge, distanceCM));
+      return [-maxVoltage, maxVoltage];
+    }
+
+    function allowedVoltageRangeForFixedCharge(chargeNC) {
+      if (Math.abs(chargeNC) < 0.001) {
+        return [0, 0];
+      }
+
+      return sortedRange(
+        voltageFromChargeAndDistance(chargeNC, Number(distanceSlider.min)),
+        voltageFromChargeAndDistance(chargeNC, Number(distanceSlider.max))
+      );
+    }
+
+    function allowedChargeRangeForFixedVoltage(voltage) {
+      if (Math.abs(voltage) < 1e-9) {
+        return [0, 0];
+      }
+
+      const rangeFromDistance = sortedRange(
+        chargeFromVoltageAndDistance(voltage, Number(distanceSlider.min)),
+        chargeFromVoltageAndDistance(voltage, Number(distanceSlider.max))
+      );
+
+      return [
+        Math.max(rangeFromDistance[0], Number(chargeSlider.min)),
+        Math.min(rangeFromDistance[1], Number(chargeSlider.max))
+      ];
+    }
+
+    function minimumDistanceForFixedVoltage(voltage) {
+      if (Math.abs(voltage) < 1e-9) {
+        return Number(distanceSlider.min);
+      }
+
+      const maxChargeMagnitude = Math.max(
+        Math.abs(Number(chargeSlider.min)),
+        Math.abs(Number(chargeSlider.max))
+      );
+      const maxChargeC = maxChargeMagnitude * 1e-9;
+      const requiredDistanceM = Math.abs((EPSILON_0 * PLATE_AREA * voltage) / maxChargeC);
+      return requiredDistanceM * 100;
+    }
+
+    function getFixedQuantity(mode) {
+      if (mode === "field") {
+        return "charge";
+      }
+
+      if (mode === "voltage") {
+        return "voltage";
+      }
+
+      return "distance";
+    }
+
+    function rememberDriver(mode, fixedQuantity, changedControl) {
+      if (changedControl && changedControl !== fixedQuantity) {
+        lastDriverByMode[mode] = changedControl;
+      }
+    }
+
+    function syncSlidersForMode(changedControl = null) {
+      if (isSyncingSliders) {
+        return;
+      }
+
+      isSyncingSliders = true;
+
+      const mode = getSelectedMode();
+      const fixedQuantity = getFixedQuantity(mode);
+      rememberDriver(mode, fixedQuantity, changedControl);
+
+      let chargeNC = Number(chargeSlider.value);
+      let distanceCM = Number(distanceSlider.value);
+      let voltage = Number(voltageSlider.value);
+      const driver = changedControl && changedControl !== fixedQuantity
+        ? changedControl
+        : lastDriverByMode[mode];
+
+      if (mode === "distance") {
+        distanceCM = setSliderToValue(distanceSlider, distanceCM);
+
+        if (driver === "voltage") {
+          voltage = clampToRange(voltage, allowedVoltageRangeForFixedDistance(distanceCM));
+          voltage = setSliderToValue(voltageSlider, voltage);
+          chargeNC = chargeFromVoltageAndDistance(voltage, distanceCM);
+          setSliderToValue(chargeSlider, chargeNC);
+        } else {
+          chargeNC = setSliderToValue(chargeSlider, chargeNC);
+          voltage = voltageFromChargeAndDistance(chargeNC, distanceCM);
+          setSliderToValue(voltageSlider, voltage);
+        }
+      }
+
+      if (mode === "field") {
+        chargeNC = setSliderToValue(chargeSlider, chargeNC);
+
+        if (Math.abs(chargeNC) < 0.001) {
+          distanceCM = setSliderToValue(distanceSlider, distanceCM);
+          voltage = 0;
+          setSliderToValue(voltageSlider, voltage);
+        } else if (driver === "voltage") {
+          voltage = clampToRange(voltage, allowedVoltageRangeForFixedCharge(chargeNC));
+          voltage = setSliderToValue(voltageSlider, voltage);
+          const proposedDistance = distanceFromChargeAndVoltage(chargeNC, voltage);
+          if (proposedDistance !== null) {
+            distanceCM = setSliderToValue(distanceSlider, proposedDistance);
+          }
+        } else {
+          distanceCM = setSliderToValue(distanceSlider, distanceCM);
+          voltage = voltageFromChargeAndDistance(chargeNC, distanceCM);
+          setSliderToValue(voltageSlider, voltage);
+        }
+      }
+
+      if (mode === "voltage") {
+        voltage = setSliderToValue(voltageSlider, voltage);
+
+        if (Math.abs(voltage) < 1e-9) {
+          distanceCM = setSliderToValue(distanceSlider, distanceCM);
+          chargeNC = 0;
+          setSliderToValue(chargeSlider, chargeNC);
+        } else if (driver === "charge") {
+          const allowedChargeRange = allowedChargeRangeForFixedVoltage(voltage);
+          chargeNC = clampToRange(chargeNC, allowedChargeRange);
+          chargeNC = setSliderToValue(chargeSlider, chargeNC);
+          const proposedDistance = distanceFromChargeAndVoltage(chargeNC, voltage);
+          if (proposedDistance !== null) {
+            distanceCM = setSliderToValue(distanceSlider, proposedDistance);
+          }
+        } else {
+          const minAllowedDistance = minimumDistanceForFixedVoltage(voltage);
+          distanceCM = clamp(distanceCM, minAllowedDistance, Number(distanceSlider.max));
+          distanceCM = setSliderToValue(distanceSlider, distanceCM);
+          chargeNC = chargeFromVoltageAndDistance(voltage, distanceCM);
+          setSliderToValue(chargeSlider, chargeNC);
+        }
+      }
+
+      isSyncingSliders = false;
+    }
+
+    function getState() {
+      const mode = getSelectedMode();
+      const distanceCM = Number(distanceSlider.value);
+      const distanceM = distanceCM / 100;
+      const capacitance = EPSILON_0 * PLATE_AREA / distanceM;
+      const chargeNC = Number(chargeSlider.value);
+      const voltage = Number(voltageSlider.value);
+      const chargeC = chargeNC * 1e-9;
+      const electricField = chargeC / (EPSILON_0 * PLATE_AREA);
+      const rightPlateChargeNC = -chargeNC;
+      const energy = 0.5 * capacitance * voltage * voltage;
+
+      return {
+        mode,
+        distanceCM,
+        distanceM,
+        capacitance,
+        chargeNC,
+        rightPlateChargeNC,
+        electricField,
+        voltage,
+        energy,
+        showField: showFieldInput.checked,
+        showPotential: showPotentialInput.checked,
+        showCharges: showChargesInput.checked
+      };
+    }
+
+    function modeName(mode) {
+      if (mode === "field") {
+        return "Hold electric field/charge on plates constant";
+      }
+      if (mode === "voltage") {
+        return "Hold potential difference constant";
+      }
+      return "Hold distance constant";
+    }
+
+    function plateChargeClass(charge) {
+      if (charge > 0.05) {
+        return "positive";
+      }
+
+      if (charge < -0.05) {
+        return "negative";
+      }
+
+      return "neutral";
+    }
+
+    function updateControlsForMode() {
+      const mode = getSelectedMode();
+
+      chargeControlGroup.classList.toggle("fixed-setting", mode === "field");
+      distanceControlGroup.classList.toggle("fixed-setting", mode === "distance");
+      constantVoltageGroup.classList.toggle("fixed-setting", mode === "voltage");
+
+      chargeSlider.disabled = false;
+      distanceSlider.disabled = false;
+      voltageSlider.disabled = false;
+
+      chargeSlider.setAttribute("aria-disabled", "false");
+      distanceSlider.setAttribute("aria-disabled", "false");
+      voltageSlider.setAttribute("aria-disabled", "false");
+
+      if (mode === "distance") {
+        distanceControlGroup.querySelector(".hint").textContent =
+          "This distance is held fixed while charge and potential difference update together.";
+      } else {
+        distanceControlGroup.querySelector(".hint").textContent =
+          "Moving the plates changes the capacitance. In the ideal model, C = ε₀A/d.";
+      }
+
+      if (mode === "field") {
+        chargeControlGroup.querySelector(".hint").textContent =
+          "This charge is held fixed, so the electric field also stays fixed while the other quantities update.";
+      } else {
+        chargeControlGroup.querySelector(".hint").textContent =
+          "The right plate always has equal and opposite charge. Negative Q makes the left plate negative.";
+      }
+
+      if (mode === "voltage") {
+        constantVoltageGroup.querySelector(".hint").textContent =
+          "This potential difference is held fixed while charge and plate separation update together.";
+      } else {
+        constantVoltageGroup.querySelector(".hint").textContent =
+          "The sign of ΔV sets which plate is at higher electric potential.";
+      }
+    }
+
+    function updateOutputs(state) {
+      chargeOutput.textContent = formatCharge(state.chargeNC);
+      distanceOutput.textContent = formatDistance(state.distanceCM);
+      voltageOutput.textContent = formatVoltage(state.voltage);
+
+      capacitanceStatus.textContent = formatCapacitance(state.capacitance);
+      fieldStatus.textContent = formatField(state.electricField);
+      voltageStatus.textContent = formatVoltage(state.voltage);
+      chargeStatus.textContent = formatCharge(state.chargeNC);
+
+      const directionText = getDirectionText(state);
+      const leftChargeClass = plateChargeClass(state.chargeNC);
+      const rightChargeClass = plateChargeClass(state.rightPlateChargeNC);
+
+      stateReadout.innerHTML = `
+        <p>
+          <strong>Mode:</strong> ${modeName(state.mode)}.
+          The highlighted slider shows the quantity currently being held fixed. The plate separation is <strong>${formatDistance(state.distanceCM)}</strong>.
+        </p>
+        <p>
+          The left plate has charge
+          <span class="${leftChargeClass}">${formatCharge(state.chargeNC)}</span>,
+          and the right plate has charge
+          <span class="${rightChargeClass}">${formatCharge(state.rightPlateChargeNC)}</span>.
+        </p>
+        <p>
+          The electric field is <strong>${formatField(state.electricField)}</strong>.
+          The potential difference is <strong>${formatVoltage(state.voltage)}</strong>.
+          ${directionText}
+        </p>
+      `;
+
+      dataTableBody.innerHTML = `
+        <tr>
+          <th scope="row">Plate separation, d</th>
+          <td>${formatDistance(state.distanceCM)}</td>
+          <td>Distance between the two ideal plates.</td>
+        </tr>
+        <tr>
+          <th scope="row">Capacitance, C</th>
+          <td>${formatCapacitance(state.capacitance)}</td>
+          <td>For fixed plate area, capacitance increases when the plates move closer together.</td>
+        </tr>
+        <tr>
+          <th scope="row">Left plate charge, Q</th>
+          <td>${formatCharge(state.chargeNC)}</td>
+          <td>The right plate has equal and opposite charge.</td>
+        </tr>
+        <tr>
+          <th scope="row">Electric field, E</th>
+          <td>${formatField(state.electricField)}</td>
+          <td>Positive means the field points from left to right. Negative means it points from right to left.</td>
+        </tr>
+        <tr>
+          <th scope="row">Potential difference, ΔV</th>
+          <td>${formatVoltage(state.voltage)}</td>
+          <td>Here ΔV means left plate potential minus right plate potential.</td>
+        </tr>
+        <tr>
+          <th scope="row">Stored energy</th>
+          <td>${(state.energy * 1e9).toFixed(3)} nJ</td>
+          <td>Calculated as U = ½C(ΔV)².</td>
+        </tr>
+      `;
+    }
+
+    function getDirectionText(state) {
+      if (Math.abs(state.chargeNC) < 0.05) {
+        return "No field direction is shown because the plate charge is approximately zero.";
+      }
+
+      if (state.chargeNC > 0) {
+        return "The field points from the positive left plate toward the negative right plate.";
+      }
+
+      return "The field points from the positive right plate toward the negative left plate.";
+    }
+
+    function draw(state) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      drawBackground();
+      const geometry = getGeometry(state);
+
+      if (state.showPotential) {
+        drawPotentialBands(state, geometry);
+      }
+
+      if (state.showField) {
+        drawFieldLines(state, geometry);
+      }
+
+      drawPlates(state, geometry);
+
+      if (state.showCharges) {
+        drawChargeSymbols(state, geometry);
+      }
+
+      drawLabels(state, geometry);
+
+      if (state.showPotential) {
+        drawPotentialPlot(state, geometry);
+      }
+    }
+
+    function drawBackground() {
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "#e5e7eb";
+      ctx.lineWidth = 1;
+
+      for (let x = 40; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+
+      for (let y = 40; y < canvas.height; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    }
+
+    function getGeometry(state) {
+      const centerX = canvas.width / 2;
+      const centerY = 230;
+      const plateHeight = 300;
+      const plateWidth = 18;
+      const minGap = 135;
+      const maxGap = 500;
+      const distanceMin = Number(distanceSlider.min);
+      const distanceMax = Number(distanceSlider.max);
+      const gap = minGap + ((state.distanceCM - distanceMin) / (distanceMax - distanceMin)) * (maxGap - minGap);
+
+      const leftX = centerX - gap / 2;
+      const rightX = centerX + gap / 2;
+      const topY = centerY - plateHeight / 2;
+      const bottomY = centerY + plateHeight / 2;
+
+      return {
+        centerX,
+        centerY,
+        plateHeight,
+        plateWidth,
+        gap,
+        leftX,
+        rightX,
+        topY,
+        bottomY,
+        fieldLeft: leftX + plateWidth / 2 + 10,
+        fieldRight: rightX - plateWidth / 2 - 10,
+        plotLeft: 90,
+        plotRight: canvas.width - 90,
+        plotTop: 555,
+        plotBottom: 695
+      };
+    }
+
+    function drawPotentialBands(state, geometry) {
+      const bandCount = 10;
+      const leftPotentialHigh = state.voltage >= 0;
+      const x0 = geometry.fieldLeft;
+      const width = geometry.fieldRight - geometry.fieldLeft;
+      const y0 = geometry.topY;
+      const height = geometry.plateHeight;
+
+      for (let i = 0; i < bandCount; i++) {
+        const fraction = i / bandCount;
+        const visualFraction = leftPotentialHigh ? fraction : 1 - fraction;
+        const opacity = 0.08 + 0.22 * (1 - visualFraction);
+
+        ctx.fillStyle = `rgba(124, 58, 237, ${opacity})`;
+        ctx.fillRect(x0 + fraction * width, y0, width / bandCount + 1, height);
+      }
+
+      ctx.save();
+      ctx.fillStyle = "rgba(17, 24, 39, 0.78)";
+      ctx.font = "700 15px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Electric potential bands", geometry.centerX, geometry.topY - 18);
+      ctx.restore();
+    }
+
+    function drawFieldLines(state, geometry) {
+      if (Math.abs(state.chargeNC) < 0.05 && Math.abs(state.electricField) < 1) {
+        return;
+      }
+
+      const direction = state.electricField >= 0 ? 1 : -1;
+      const strength = clamp(Math.abs(state.electricField) / 120000, 0.15, 1);
+      const lineCount = Math.round(4 + 8 * strength);
+      const spacing = geometry.plateHeight / (lineCount + 1);
+
+      ctx.save();
+      ctx.strokeStyle = "#15803d";
+      ctx.fillStyle = "#15803d";
+      ctx.lineWidth = 2 + 2 * strength;
+
+      for (let i = 1; i <= lineCount; i++) {
+        const y = geometry.topY + spacing * i;
+        const startX = direction > 0 ? geometry.fieldLeft : geometry.fieldRight;
+        const endX = direction > 0 ? geometry.fieldRight : geometry.fieldLeft;
+
+        drawArrow(startX, y, endX, y, 12);
+      }
+
+      ctx.restore();
+    }
+
+    function drawArrow(x1, y1, x2, y2, headSize) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(
+        x2 - headSize * Math.cos(angle - Math.PI / 6),
+        y2 - headSize * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        x2 - headSize * Math.cos(angle + Math.PI / 6),
+        y2 - headSize * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawPlates(state, geometry) {
+      const leftColor = state.chargeNC > 0.05
+        ? "#2563eb"
+        : state.chargeNC < -0.05
+          ? "#dc2626"
+          : "#6b7280";
+
+      const rightColor = state.rightPlateChargeNC > 0.05
+        ? "#2563eb"
+        : state.rightPlateChargeNC < -0.05
+          ? "#dc2626"
+          : "#6b7280";
+
+      drawSinglePlate(geometry.leftX, geometry.topY, geometry.plateWidth, geometry.plateHeight, leftColor);
+      drawSinglePlate(geometry.rightX, geometry.topY, geometry.plateWidth, geometry.plateHeight, rightColor);
+    }
+
+    function drawSinglePlate(centerX, topY, width, height, color) {
+      ctx.save();
+
+      ctx.fillStyle = color;
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.roundRect(centerX - width / 2, topY, width, height, 8);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawChargeSymbols(state, geometry) {
+      const referenceCharge = getReferenceChargeForSymbols(state);
+      drawPlateSymbols(geometry.leftX, geometry.topY, geometry.plateHeight, state.chargeNC, referenceCharge);
+      drawPlateSymbols(geometry.rightX, geometry.topY, geometry.plateHeight, state.rightPlateChargeNC, referenceCharge);
+    }
+
+    function getReferenceChargeForSymbols(state) {
+      if (state.mode === "voltage") {
+        const heldVoltage = Math.abs(Number(voltageSlider.value));
+        const smallestDistanceM = Number(distanceSlider.min) / 100;
+        const largestPossibleCapacitance = EPSILON_0 * PLATE_AREA / smallestDistanceM;
+        return Math.max(largestPossibleCapacitance * heldVoltage * 1e9, 1);
+      }
+
+      return Math.max(Math.abs(Number(chargeSlider.min)), Math.abs(Number(chargeSlider.max)), 1);
+    }
+
+    function drawPlateSymbols(x, topY, height, chargeNC, referenceCharge) {
+      const absCharge = Math.abs(chargeNC);
+      if (absCharge < 0.05) {
+        return;
+      }
+
+      const symbol = chargeNC > 0 ? "+" : "−";
+      const fraction = clamp(absCharge / referenceCharge, 0.08, 1);
+      const count = Math.round(2 + 12 * fraction);
+      const columns = count > 8 ? 2 : 1;
+      const rows = Math.ceil(count / columns);
+      const spacing = height / (rows + 1);
+
+      ctx.save();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "900 22px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      for (let i = 0; i < count; i++) {
+        const row = Math.floor(i / columns) + 1;
+        const column = i % columns;
+        const xOffset = columns === 1 ? 0 : column === 0 ? -4 : 4;
+        ctx.fillText(symbol, x + xOffset, topY + spacing * row);
+      }
+
+      ctx.restore();
+    }
+
+    function drawLabels(state, geometry) {
+      ctx.save();
+
+      ctx.fillStyle = "#111827";
+      ctx.font = "800 17px system-ui, sans-serif";
+      ctx.textAlign = "center";
+
+      ctx.fillText(`Left plate: ${formatCharge(state.chargeNC)}`, geometry.leftX, geometry.bottomY + 35);
+      ctx.fillText(`Right plate: ${formatCharge(state.rightPlateChargeNC)}`, geometry.rightX, geometry.bottomY + 35);
+
+      ctx.strokeStyle = "#111827";
+      ctx.fillStyle = "#111827";
+      ctx.lineWidth = 2;
+
+      const y = geometry.bottomY + 65;
+      ctx.beginPath();
+      ctx.moveTo(geometry.leftX, y);
+      ctx.lineTo(geometry.rightX, y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(geometry.leftX, y);
+      ctx.lineTo(geometry.leftX + 10, y - 6);
+      ctx.lineTo(geometry.leftX + 10, y + 6);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(geometry.rightX, y);
+      ctx.lineTo(geometry.rightX - 10, y - 6);
+      ctx.lineTo(geometry.rightX - 10, y + 6);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.font = "800 16px system-ui, sans-serif";
+      ctx.fillText(`d = ${formatDistance(state.distanceCM)}`, geometry.centerX, y + 25);
+
+      ctx.restore();
+    }
+
+    function getPotentialPlotScale() {
+      const maxChargeNC = Math.max(Math.abs(Number(chargeSlider.min)), Math.abs(Number(chargeSlider.max)));
+      const maxDistanceM = Math.max(Math.abs(Number(distanceSlider.min)), Math.abs(Number(distanceSlider.max))) / 100;
+      const maxVoltageFromCharge = (maxChargeNC * 1e-9 / (EPSILON_0 * PLATE_AREA)) * maxDistanceM;
+      const maxVoltageFromSlider = Math.max(Math.abs(Number(voltageSlider.min)), Math.abs(Number(voltageSlider.max)));
+
+      return Math.max(maxVoltageFromCharge, maxVoltageFromSlider, 1);
+    }
+
+    function drawPotentialPlot(state, geometry) {
+      const plotLeft = geometry.plotLeft;
+      const plotRight = geometry.plotRight;
+      const plotTop = geometry.plotTop;
+      const plotBottom = geometry.plotBottom;
+      const plotHeight = plotBottom - plotTop;
+      const plotWidth = plotRight - plotLeft;
+      const plateLeftX = geometry.leftX;
+      const plateRightX = geometry.rightX;
+      const maxAbsPotential = getPotentialPlotScale();
+      const halfPlotHeight = plotHeight / 2 - 22;
+      const midY = plotTop + plotHeight / 2;
+
+      function potentialToY(voltage) {
+        const clampedVoltage = clamp(voltage, -maxAbsPotential, maxAbsPotential);
+        return midY - (clampedVoltage / maxAbsPotential) * halfPlotHeight;
+      }
+
+      const leftPotential = state.voltage;
+      const rightPotential = 0;
+      const leftY = potentialToY(leftPotential);
+      const rightY = potentialToY(rightPotential);
+      const topScaleY = potentialToY(maxAbsPotential);
+      const bottomScaleY = potentialToY(-maxAbsPotential);
+
+      ctx.save();
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+      ctx.strokeStyle = "#d1d5db";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(plotLeft - 58, plotTop - 36, plotWidth + 116, plotHeight + 78, 14);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#111827";
+      ctx.font = "900 16px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Electric potential vs. position", geometry.centerX, plotTop - 14);
+
+      ctx.strokeStyle = "#9ca3af";
+      ctx.lineWidth = 1.25;
+      ctx.beginPath();
+      ctx.moveTo(plotLeft, plotBottom);
+      ctx.lineTo(plotRight, plotBottom);
+      ctx.moveTo(plotLeft, plotTop);
+      ctx.lineTo(plotLeft, plotBottom);
+      ctx.stroke();
+
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(plotLeft, midY);
+      ctx.lineTo(plotRight, midY);
+      ctx.stroke();
+
+      ctx.setLineDash([6, 5]);
+      ctx.strokeStyle = "#6b7280";
+      ctx.beginPath();
+      ctx.moveTo(plateLeftX, plotTop);
+      ctx.lineTo(plateLeftX, plotBottom);
+      ctx.moveTo(plateRightX, plotTop);
+      ctx.lineTo(plateRightX, plotBottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = "#7c3aed";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(plotLeft, leftY);
+      ctx.lineTo(plateLeftX, leftY);
+      ctx.lineTo(plateRightX, rightY);
+      ctx.lineTo(plotRight, rightY);
+      ctx.stroke();
+
+      ctx.fillStyle = "#7c3aed";
+      ctx.beginPath();
+      ctx.arc(plateLeftX, leftY, 5, 0, 2 * Math.PI);
+      ctx.arc(plateRightX, rightY, 5, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.fillStyle = "#4b5563";
+      ctx.font = "700 12px system-ui, sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText(`+${formatVoltage(maxAbsPotential).replace("+", "")}`, plotLeft - 10, topScaleY + 4);
+      ctx.fillText("0 V", plotLeft - 10, midY + 4);
+      ctx.fillText(`−${formatVoltage(maxAbsPotential).replace("+", "")}`, plotLeft - 10, bottomScaleY + 4);
+
+      ctx.restore();
+    }
+
+    function updateAll(changedControl = null) {
+      syncSlidersForMode(changedControl);
+      updateControlsForMode();
+      const state = getState();
+      updateOutputs(state);
+      draw(state);
+    }
+
+    function resetSimulation() {
+      modeInputs.forEach(input => {
+        input.checked = input.value === DEFAULTS.mode;
+      });
+
+      chargeSlider.value = DEFAULTS.chargeNC;
+      distanceSlider.value = DEFAULTS.distanceCM;
+      voltageSlider.value = DEFAULTS.voltageV;
+
+      showFieldInput.checked = DEFAULTS.showField;
+      showPotentialInput.checked = DEFAULTS.showPotential;
+      showChargesInput.checked = DEFAULTS.showCharges;
+
+      updateAll();
+    }
+
+    modeInputs.forEach(input => {
+      input.addEventListener("change", () => updateAll());
+    });
+
+    chargeSlider.addEventListener("input", () => updateAll("charge"));
+    chargeSlider.addEventListener("change", () => updateAll("charge"));
+
+    distanceSlider.addEventListener("input", () => updateAll("distance"));
+    distanceSlider.addEventListener("change", () => updateAll("distance"));
+
+    voltageSlider.addEventListener("input", () => updateAll("voltage"));
+    voltageSlider.addEventListener("change", () => updateAll("voltage"));
+
+    [
+      showFieldInput,
+      showPotentialInput,
+      showChargesInput
+    ].forEach(control => {
+      control.addEventListener("input", () => updateAll());
+      control.addEventListener("change", () => updateAll());
+    });
+
+    resetButton.addEventListener("click", resetSimulation);
+
+    window.addEventListener("resize", () => updateAll());
+
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+      CanvasRenderingContext2D.prototype.roundRect = function(x, y, width, height, radius) {
+        const r = Math.min(radius, width / 2, height / 2);
+        this.beginPath();
+        this.moveTo(x + r, y);
+        this.arcTo(x + width, y, x + width, y + height, r);
+        this.arcTo(x + width, y + height, x, y + height, r);
+        this.arcTo(x, y + height, x, y, r);
+        this.arcTo(x, y, x + width, y, r);
+        this.closePath();
+        return this;
+      };
+    }
+
+    setPhysicalSliderRanges();
+    resetSimulation();
+  </script>
+</body>
+</html>
