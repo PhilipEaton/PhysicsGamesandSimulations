@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Centripetal Acceleration Track Game</title>
+  <style>
+    :root {
+      --page-bg: #f3f4f6;
+      --panel-bg: #ffffff;
+      --text: #111827;
+      --muted-text: #4b5563;
+      --border: #d1d5db;
+      --primary-blue: #2563eb;
+      --primary-blue-dark: #1d4ed8;
+      --success-green: #15803d;
+      --warning-amber: #d97706;
+      --error-red: #b91c1c;
+      --focus-amber: #f59e0b;
+      --header-bg: #111827;
+      --track-gray: #6b7280;
+      --track-edge: #374151;
+      --velocity: #16a34a;
+      --acceleration: #7c3aed;
+      --parallel: #ea580c;
+      --perpendicular: #0369a1;
+      --car: #dc2626;
+      --road: #4b5563;
+      --road-line: #f9fafb;
+      --shadow: 0 12px 28px rgba(17, 24, 39, 0.08);
+      --radius: 16px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--page-bg);
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 1rem;
+      top: -5rem;
+      z-index: 1000;
+      padding: 0.75rem 1rem;
+      color: #fff;
+      background: var(--primary-blue-dark);
+      border-radius: 0.5rem;
+      transition: top 0.15s ease;
+    }
+
+    .skip-link:focus { top: 1rem; outline: 3px solid var(--focus-amber); outline-offset: 3px; }
+
+    header {
+      padding: 1.5rem clamp(1rem, 4vw, 3rem);
+      color: #fff;
+      background: var(--header-bg);
+    }
+
+    header h1 { margin: 0 0 0.35rem; font-size: clamp(1.6rem, 3vw, 2.45rem); }
+    header p { margin: 0; max-width: 72rem; color: #d1d5db; }
+
+    main {
+      width: min(1440px, calc(100% - 2rem));
+      margin: 1rem auto 2rem;
+    }
+
+    .card {
+      margin-bottom: 1rem;
+      padding: 1rem;
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .card h2, .card h3 { margin-top: 0; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 390px) 1fr;
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .simulation-grid {
+      display: grid;
+      grid-template-columns: minmax(420px, 1.35fr) minmax(320px, 0.9fr);
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    fieldset {
+      margin: 0 0 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+    }
+
+    legend { font-weight: 700; padding: 0 0.35rem; }
+
+    label { display: block; font-weight: 650; margin-bottom: 0.25rem; }
+
+    input[type="range"] { width: 100%; }
+
+    input[type="checkbox"] {
+      width: 1.1rem;
+      height: 1.1rem;
+      vertical-align: -0.15rem;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      min-height: 2.5rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 0.7rem;
+      border: 1px solid transparent;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    canvas:focus-visible {
+      outline: 4px solid var(--focus-amber);
+      outline-offset: 3px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.5rem;
+    }
+
+    .primary { color: #fff; background: var(--primary-blue); }
+    .primary:hover { background: var(--primary-blue-dark); }
+
+    .secondary {
+      color: var(--primary-blue-dark);
+      background: #fff;
+      border-color: var(--primary-blue);
+    }
+
+    .danger { color: #fff; background: var(--error-red); }
+
+    .control-note,
+    .small-note {
+      color: var(--muted-text);
+      font-size: 0.93rem;
+    }
+
+    .slider-readout {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 0.25rem;
+      color: var(--muted-text);
+      font-size: 0.92rem;
+    }
+
+    .checkbox-list label {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      margin: 0.4rem 0;
+      font-weight: 600;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      min-height: 340px;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 650px;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+    }
+
+    .right-panel-grid {
+      display: grid;
+      gap: 1rem;
+      height: 100%;
+    }
+
+    .readout-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .metric {
+      padding: 0.75rem;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted-text);
+      font-size: 0.86rem;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 0.2rem;
+      font-size: 1.15rem;
+    }
+
+    .status {
+      padding: 0.85rem;
+      border-left: 5px solid var(--primary-blue);
+      background: #eff6ff;
+      border-radius: 0.75rem;
+    }
+
+    .status.warning {
+      border-left-color: var(--warning-amber);
+      background: #fffbeb;
+    }
+
+    .status.success {
+      border-left-color: var(--success-green);
+      background: #ecfdf5;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      padding: 0.65rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    th { background: #f3f4f6; }
+    caption { caption-side: top; text-align: left; font-weight: 700; margin-bottom: 0.5rem; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .track-selector {
+      margin-top: 0.85rem;
+      padding: 0.75rem;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+    }
+
+    .track-selector h3 {
+      margin: 0 0 0.45rem;
+      font-size: 1rem;
+    }
+
+    .track-selector .button-row { margin-top: 0.25rem; }
+
+    .track-choice[aria-pressed="true"] {
+      color: #fff;
+      background: var(--primary-blue-dark);
+      border-color: var(--primary-blue-dark);
+    }
+
+    .track-key {
+      margin-top: 0.85rem;
+      padding: 0.75rem;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+    }
+
+    .track-key h3 {
+      margin: 0 0 0.55rem;
+      font-size: 1rem;
+    }
+
+    .key-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem 1.25rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .key-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      white-space: nowrap;
+    }
+
+    .swatch {
+      width: 1.5rem;
+      height: 0.25rem;
+      border-radius: 999px;
+      background: var(--text);
+    }
+
+    .swatch.dashed { background: repeating-linear-gradient(90deg, currentColor 0 7px, transparent 7px 12px); height: 0.18rem; }
+    .swatch.velocity { color: var(--velocity); background: var(--velocity); }
+    .swatch.acceleration { color: var(--acceleration); background: var(--acceleration); }
+    .swatch.parallel { color: var(--parallel); }
+    .swatch.perpendicular { color: var(--perpendicular); }
+
+    @media (max-width: 1100px) {
+      .layout,
+      .simulation-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 650px) {
+      main { width: min(100% - 1rem, 1440px); }
+      .readout-grid { grid-template-columns: 1fr; }
+      .key-list { flex-direction: column; align-items: flex-start; }
+      .button-row { flex-direction: column; }
+      button { width: 100%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <header>
+    <h1>Centripetal Acceleration Track Game</h1>
+    <p>Follow a car around a closed track and connect steering, speed changes, velocity, tangential acceleration, and centripetal acceleration.</p>
+  </header>
+
+  <main id="main-content">
+    <section class="card" aria-labelledby="how-to-use-heading">
+      <h2 id="how-to-use-heading">How to use</h2>
+      <p>
+        The car follows the center of the track automatically. Use the acceleration slider to make the car speed up, coast, or slow down. Watch the velocity arrow, total acceleration arrow, and dashed component arrows attached to the car.
+      </p>
+      <p>
+        The right panel shows the driver view: the road ahead bends in the direction of the upcoming turn, and the steering wheel turns in the same direction as the centripetal acceleration. Keyboard controls: press <strong>Space</strong> to play or pause, <strong>R</strong> to reset, <strong>S</strong> to step forward, and use the arrow keys on the acceleration slider to adjust speeding up or slowing down.
+      </p>
+    </section>
+
+    <div class="layout">
+      <aside class="card" aria-labelledby="controls-heading">
+        <h2 id="controls-heading">Controls</h2>
+
+        <fieldset>
+          <legend>Animation controls</legend>
+          <div class="button-row">
+            <button id="playPauseBtn" class="primary" type="button">Pause</button>
+            <button id="stepBtn" class="secondary" type="button">Step</button>
+            <button id="resetBtn" class="danger" type="button">Reset</button>
+          </div>
+          <p class="control-note">Step advances the simulation by a small amount and is useful when paused.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend>Speeding up and slowing down</legend>
+          <label for="tangentialSlider">Tangential acceleration control</label>
+          <input id="tangentialSlider" type="range" min="-4" max="4" step="0.1" value="0" aria-describedby="tangentialValue" />
+          <div class="slider-readout" aria-hidden="true">
+            <span>Slow down</span>
+            <span>Coast</span>
+            <span>Speed up</span>
+          </div>
+          <p id="tangentialValue" class="status" aria-live="polite">Tangential acceleration: 0.0 m/s², coasting.</p>
+          <div class="checkbox-list mode-options" aria-label="Speed modes">
+            <label><input id="constantSpeedMode" type="checkbox" /> Constant speed mode</label>
+            <label><input id="slowSpeedMode" type="checkbox" /> Slow speed mode: hold 18 m/s</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Display options</legend>
+          <div class="checkbox-list">
+            <label><input id="showVelocity" type="checkbox" checked /> Show velocity arrow</label>
+            <label><input id="showTotalAcceleration" type="checkbox" checked /> Show total acceleration arrow</label>
+            <label><input id="showParallel" type="checkbox" checked /> Show dashed tangential component</label>
+            <label><input id="showPerpendicular" type="checkbox" checked /> Show dashed perpendicular component</label>
+          </div>
+        </fieldset>
+
+      </aside>
+
+      <section class="simulation-grid" aria-label="Simulation views">
+        <section class="card" aria-labelledby="track-heading">
+          <h2 id="track-heading">Overhead track view</h2>
+          <div class="track-selector" aria-labelledby="track-selector-heading">
+            <h3 id="track-selector-heading">Choose a track</h3>
+            <div class="button-row" role="group" aria-label="Track presets">
+              <button class="secondary track-choice" type="button" data-track="oval" aria-pressed="false">Simple oval</button>
+              <button class="secondary track-choice" type="button" data-track="current" aria-pressed="true">Mixed curves</button>
+            </div>
+          </div>
+          <div class="canvas-wrap">
+            <canvas id="trackCanvas" width="920" height="640" tabindex="0" role="img" aria-label="Overhead view of a closed track with a car and vector arrows."></canvas>
+          </div>
+          
+          <div class="track-key" aria-labelledby="track-key-heading">
+            <h3 id="track-key-heading">Track view key</h3>
+            <ul class="key-list" aria-label="Vector drawing key">
+              <li><span class="swatch velocity"></span> Velocity</li>
+              <li><span class="swatch acceleration"></span> Total acceleration</li>
+              <li><span class="swatch dashed parallel"></span> Tangential acceleration</li>
+              <li><span class="swatch dashed perpendicular"></span> Perpendicular acceleration</li>
+            </ul>
+          </div>
+          <p class="small-note">The car is constrained to the track so the activity focuses on the meaning of the acceleration vectors rather than driving skill.</p>
+        </section>
+
+        <section class="right-panel-grid">
+          <section class="card" aria-labelledby="driver-heading">
+            <h2 id="driver-heading">Driver view and steering wheel</h2>
+            <canvas id="driverCanvas" width="620" height="500" tabindex="0" role="img" aria-label="Driver view showing the upcoming road and a steering wheel that turns with the track curvature."></canvas>
+          </section>
+
+          <section class="card" aria-labelledby="readout-heading">
+            <h2 id="readout-heading">Informational Readouts</h2>
+            <div class="readout-grid" aria-label="Current numerical values">
+              <div class="metric"><span>Speed</span><strong id="speedDisplay">0.0 m/s</strong></div>
+              <div class="metric"><span>Speed limit</span><strong id="maxSpeedDisplay">28.0 m/s</strong></div>
+              <div class="metric"><span>Tangential acceleration</span><strong id="parallelDisplay">0.0 m/s²</strong></div>
+              <div class="metric"><span>Centripetal acceleration</span><strong id="perpDisplay">0.0 m/s²</strong></div>
+              <div class="metric"><span>Total acceleration</span><strong id="totalDisplay">0.0 m/s²</strong></div>
+              <div class="metric"><span>Turn direction</span><strong id="turnDisplay">Straight</strong></div>
+            </div>
+            <p id="stateSummary" class="status" aria-live="polite">The car is coasting. The velocity points forward along the track.</p>
+          </section>
+        </section>
+      </section>
+    </div>
+
+    <section class="card" aria-labelledby="data-heading">
+      <h2 id="data-heading">Data table</h2>
+      <table>
+        <caption>Same physics information shown in the vector diagram</caption>
+        <thead>
+          <tr>
+            <th scope="col">Quantity</th>
+            <th scope="col">Current value</th>
+            <th scope="col">Direction / meaning</th>
+          </tr>
+        </thead>
+        <tbody id="dataTableBody">
+          <tr><th scope="row">Velocity</th><td>0.0 m/s</td><td>Forward, tangent to the track</td></tr>
+          <tr><th scope="row">Tangential acceleration</th><td>0.0 m/s²</td><td>Zero; speed is constant</td></tr>
+          <tr><th scope="row">Centripetal acceleration</th><td>0.0 m/s²</td><td>Zero on a straight part of the track</td></tr>
+          <tr><th scope="row">Total acceleration</th><td>0.0 m/s²</td><td>Vector sum of tangential and perpendicular components</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const trackCanvas = document.getElementById('trackCanvas');
+    const trackCtx = trackCanvas.getContext('2d');
+    const driverCanvas = document.getElementById('driverCanvas');
+    const driverCtx = driverCanvas.getContext('2d');
+
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const stepBtn = document.getElementById('stepBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const tangentialSlider = document.getElementById('tangentialSlider');
+    const showVelocity = document.getElementById('showVelocity');
+    const showTotalAcceleration = document.getElementById('showTotalAcceleration');
+    const showParallel = document.getElementById('showParallel');
+    const showPerpendicular = document.getElementById('showPerpendicular');
+    const constantSpeedMode = document.getElementById('constantSpeedMode');
+    const slowSpeedMode = document.getElementById('slowSpeedMode');
+    const trackChoiceButtons = Array.from(document.querySelectorAll('.track-choice'));
+
+    const tangentialValue = document.getElementById('tangentialValue');
+    const speedDisplay = document.getElementById('speedDisplay');
+    const maxSpeedDisplay = document.getElementById('maxSpeedDisplay');
+    const parallelDisplay = document.getElementById('parallelDisplay');
+    const perpDisplay = document.getElementById('perpDisplay');
+    const totalDisplay = document.getElementById('totalDisplay');
+    const turnDisplay = document.getElementById('turnDisplay');
+    const stateSummary = document.getElementById('stateSummary');
+    const dataTableBody = document.getElementById('dataTableBody');
+
+    const css = getComputedStyle(document.documentElement);
+    const colors = {
+      text: css.getPropertyValue('--text').trim(),
+      muted: css.getPropertyValue('--muted-text').trim(),
+      border: css.getPropertyValue('--border').trim(),
+      track: css.getPropertyValue('--track-gray').trim(),
+      trackEdge: css.getPropertyValue('--track-edge').trim(),
+      velocity: css.getPropertyValue('--velocity').trim(),
+      acceleration: css.getPropertyValue('--acceleration').trim(),
+      parallel: css.getPropertyValue('--parallel').trim(),
+      perpendicular: css.getPropertyValue('--perpendicular').trim(),
+      car: css.getPropertyValue('--car').trim(),
+      road: css.getPropertyValue('--road').trim(),
+      roadLine: css.getPropertyValue('--road-line').trim(),
+      warning: css.getPropertyValue('--warning-amber').trim(),
+      success: css.getPropertyValue('--success-green').trim()
+    };
+
+    const state = {
+      running: true,
+      sPx: 0,
+      speed: 12,
+      maxSpeed: 28,
+      minSpeed: 1.5,
+      tangentialAcceleration: 0,
+      lastTime: performance.now(),
+      pxPerMeter: 7.5,
+      trackSamples: [],
+      totalLengthPx: 0,
+      announceTimer: 0
+    };
+
+    maxSpeedDisplay.textContent = `${state.maxSpeed.toFixed(1)} m/s`;
+
+    const trackPresets = {
+      oval: {
+        name: 'Simple oval',
+        description: 'a broad oval with two true straightaways and two steady semicircular turns',
+        generator: 'oval'
+      },
+      current: {
+        name: 'Mixed curves',
+        description: 'a closed course with tight and wide left and right turns',
+        points: [
+          { x: 170, y: 350 },
+          { x: 205, y: 180 },
+          { x: 390, y: 110 },
+          { x: 595, y: 150 },
+          { x: 765, y: 235 },
+          { x: 720, y: 405 },
+          { x: 565, y: 510 },
+          { x: 405, y: 470 },
+          { x: 310, y: 345 },
+          { x: 215, y: 500 }
+        ]
+      }
+    };
+
+    let activeTrackKey = 'current';
+
+    function catmullRom(p0, p1, p2, p3, t) {
+      const t2 = t * t;
+      const t3 = t2 * t;
+      return {
+        x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * t + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3),
+        y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * t + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3)
+      };
+    }
+
+    function buildTrack() {
+      const preset = trackPresets[activeTrackKey];
+      if (preset.generator === 'oval') {
+        state.trackSamples = buildTrueOvalTrack();
+      } else {
+        state.trackSamples = buildCatmullTrack(preset.points);
+      }
+    }
+
+    function finalizeSamples(rawSamples, useProvidedTangents = false) {
+      let cumulative = 0;
+      const samples = rawSamples.map((sample, index) => {
+        if (index > 0) {
+          cumulative += distance(rawSamples[index - 1], sample);
+        }
+        return { ...sample, s: cumulative };
+      });
+      cumulative += distance(rawSamples[rawSamples.length - 1], rawSamples[0]);
+      state.totalLengthPx = cumulative;
+
+      for (let i = 0; i < samples.length; i++) {
+        if (useProvidedTangents && Number.isFinite(samples[i].tx) && Number.isFinite(samples[i].ty)) {
+          const tangent = normalize({ x: samples[i].tx, y: samples[i].ty });
+          samples[i].tx = tangent.x;
+          samples[i].ty = tangent.y;
+        } else {
+          const prev = samples[(i - 1 + samples.length) % samples.length];
+          const next = samples[(i + 1) % samples.length];
+          const tangent = normalize({ x: next.x - prev.x, y: next.y - prev.y });
+          samples[i].tx = tangent.x;
+          samples[i].ty = tangent.y;
+        }
+      }
+
+      for (let i = 0; i < samples.length; i++) {
+        if (Number.isFinite(samples[i].kSignedPxOverride)) {
+          samples[i].kSignedPx = samples[i].kSignedPxOverride;
+        } else {
+          const prev = samples[(i - 1 + samples.length) % samples.length];
+          const next = samples[(i + 1) % samples.length];
+          const ds = arcDistance(prev.s, next.s, state.totalLengthPx);
+          const dTx = next.tx - prev.tx;
+          const dTy = next.ty - prev.ty;
+          const kPx = ds > 0 ? (samples[i].tx * dTy - samples[i].ty * dTx) / ds : 0;
+          samples[i].kSignedPx = smoothCurvature(kPx);
+        }
+        samples[i].kSignedM = samples[i].kSignedPx * state.pxPerMeter;
+      }
+
+      return samples;
+    }
+
+    function buildCatmullTrack(controlPoints) {
+      const dense = [];
+      const n = controlPoints.length;
+      for (let i = 0; i < n; i++) {
+        const p0 = controlPoints[(i - 1 + n) % n];
+        const p1 = controlPoints[i];
+        const p2 = controlPoints[(i + 1) % n];
+        const p3 = controlPoints[(i + 2) % n];
+        for (let j = 0; j < 32; j++) {
+          dense.push(catmullRom(p0, p1, p2, p3, j / 32));
+        }
+      }
+      return finalizeSamples(dense, false);
+    }
+
+    function buildTrueOvalTrack() {
+      const samples = [];
+      const leftCenter = { x: 250, y: 320 };
+      const rightCenter = { x: 670, y: 320 };
+      const radius = 145;
+      const topY = leftCenter.y - radius;
+      const bottomY = leftCenter.y + radius;
+      const straightSteps = 86;
+      const arcSteps = 76;
+
+      function pushPoint(x, y, tx, ty, kSignedPxOverride) {
+        samples.push({ x, y, tx, ty, kSignedPxOverride });
+      }
+
+      for (let i = 0; i < straightSteps; i++) {
+        const t = i / straightSteps;
+        pushPoint(lerp(leftCenter.x, rightCenter.x, t), topY, 1, 0, 0);
+      }
+
+      for (let i = 0; i < arcSteps; i++) {
+        const theta = -Math.PI / 2 + Math.PI * (i / arcSteps);
+        const x = rightCenter.x + radius * Math.cos(theta);
+        const y = rightCenter.y + radius * Math.sin(theta);
+        pushPoint(x, y, -Math.sin(theta), Math.cos(theta), 1 / radius);
+      }
+
+      for (let i = 0; i < straightSteps; i++) {
+        const t = i / straightSteps;
+        pushPoint(lerp(rightCenter.x, leftCenter.x, t), bottomY, -1, 0, 0);
+      }
+
+      for (let i = 0; i < arcSteps; i++) {
+        const theta = Math.PI / 2 + Math.PI * (i / arcSteps);
+        const x = leftCenter.x + radius * Math.cos(theta);
+        const y = leftCenter.y + radius * Math.sin(theta);
+        pushPoint(x, y, -Math.sin(theta), Math.cos(theta), 1 / radius);
+      }
+
+      return finalizeSamples(samples, true);
+    }
+
+    function smoothCurvature(k) {
+      if (Math.abs(k) < 0.0018) return 0;
+      return Math.max(-0.045, Math.min(0.045, k));
+    }
+
+    function arcDistance(s1, s2, total) {
+      let d = s2 - s1;
+      if (d < -total / 2) d += total;
+      if (d > total / 2) d -= total;
+      return Math.abs(d);
+    }
+
+    function distance(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function normalize(v) {
+      const mag = Math.hypot(v.x, v.y) || 1;
+      return { x: v.x / mag, y: v.y / mag };
+    }
+
+    function getTrackState(sPx) {
+      const total = state.totalLengthPx;
+      let s = ((sPx % total) + total) % total;
+      const samples = state.trackSamples;
+      let lo = 0;
+      let hi = samples.length - 1;
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (samples[mid].s < s) lo = mid + 1;
+        else hi = mid;
+      }
+      let i1 = lo;
+      let i0 = (i1 - 1 + samples.length) % samples.length;
+      const a = samples[i0];
+      const b = samples[i1];
+      let segmentLength = b.s - a.s;
+      let localS = s - a.s;
+      if (segmentLength <= 0) {
+        segmentLength = (b.s + total) - a.s;
+        localS = s < a.s ? s + total - a.s : s - a.s;
+      }
+      const t = segmentLength > 0 ? localS / segmentLength : 0;
+      const x = lerp(a.x, b.x, t);
+      const y = lerp(a.y, b.y, t);
+      const tangent = normalize({ x: lerp(a.tx, b.tx, t), y: lerp(a.ty, b.ty, t) });
+      const kSignedM = lerp(a.kSignedM, b.kSignedM, t);
+      return { x, y, tx: tangent.x, ty: tangent.y, kSignedM };
+    }
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function updatePhysics(dt) {
+      const rawTangential = Number(tangentialSlider.value);
+      const aT = (constantSpeedMode.checked || slowSpeedMode.checked) ? 0 : rawTangential;
+      state.tangentialAcceleration = aT;
+      if (slowSpeedMode.checked) {
+        state.speed = 18;
+      } else {
+        state.speed += aT * dt;
+      }
+      if (state.speed > state.maxSpeed) state.speed = state.maxSpeed;
+      if (state.speed < state.minSpeed) state.speed = state.minSpeed;
+      state.sPx = (state.sPx + state.speed * state.pxPerMeter * dt) % state.totalLengthPx;
+    }
+
+    function drawTrackView() {
+      const ctx = trackCtx;
+      ctx.clearRect(0, 0, trackCanvas.width, trackCanvas.height);
+      drawGrid(ctx, trackCanvas.width, trackCanvas.height);
+      drawTrack(ctx);
+
+      const car = getTrackState(state.sPx);
+      const turn = getTurnInfo(car.kSignedM);
+      const normalLeft = { x: -car.ty, y: car.tx };
+      const aC = state.speed * state.speed * car.kSignedM;
+      const aT = state.tangentialAcceleration;
+      const totalA = {
+        x: aT * car.tx + aC * normalLeft.x,
+        y: aT * car.ty + aC * normalLeft.y
+      };
+
+      const velocityOrigin = shiftedCarPoint(car, 0, -18);
+      const parallelOrigin = shiftedCarPoint(car, 0, 18);
+      const perpendicularOrigin = shiftedCarPoint(car, -14, 0);
+      const totalOrigin = shiftedCarPoint(car, 14, 0);
+
+      if (showParallel.checked && Math.abs(aT) > 0.03) {
+        drawArrow(ctx, parallelOrigin, { x: aT * car.tx, y: aT * car.ty }, 18, colors.parallel, true, 'a∥');
+      }
+      if (showPerpendicular.checked && Math.abs(aC) > 0.03) {
+        drawArrow(ctx, perpendicularOrigin, { x: aC * normalLeft.x, y: aC * normalLeft.y }, 18, colors.perpendicular, true, 'a⊥');
+      }
+      if (showTotalAcceleration.checked && Math.hypot(totalA.x, totalA.y) > 0.03) {
+        drawArrow(ctx, totalOrigin, totalA, 17, colors.acceleration, false, 'a');
+      }
+      if (showVelocity.checked) {
+        drawArrow(ctx, velocityOrigin, { x: state.speed * car.tx, y: state.speed * car.ty }, 4.2, colors.velocity, false, 'v');
+      }
+
+      drawCar(ctx, car);
+      drawMiniLabels(ctx, turn);
+    }
+
+    function drawGrid(ctx, w, h) {
+      ctx.save();
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      for (let x = 40; x < w; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 40; y < h; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawTrack(ctx) {
+      const samples = state.trackSamples;
+      drawPath(ctx, samples, colors.trackEdge, 74);
+      drawPath(ctx, samples, colors.track, 62);
+      drawPath(ctx, samples, '#f9fafb', 4, [18, 18]);
+      drawPath(ctx, samples, '#9ca3af', 1);
+    }
+
+    function drawPath(ctx, samples, stroke, width, dash = []) {
+      ctx.save();
+      ctx.beginPath();
+      samples.forEach((p, index) => {
+        if (index === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = width;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.setLineDash(dash);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawCar(ctx, car) {
+      const angle = Math.atan2(car.ty, car.tx);
+      ctx.save();
+      ctx.translate(car.x, car.y);
+      ctx.rotate(angle);
+      ctx.fillStyle = colors.car;
+      ctx.strokeStyle = '#7f1d1d';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(24, 0);
+      ctx.lineTo(-16, -13);
+      ctx.lineTo(-8, 0);
+      ctx.lineTo(-16, 13);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(3, 0, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function shiftedCarPoint(car, forwardPx, leftPx) {
+      return {
+        x: car.x + car.tx * forwardPx - car.ty * leftPx,
+        y: car.y + car.ty * forwardPx + car.tx * leftPx
+      };
+    }
+
+    function drawArrow(ctx, origin, vector, scale, color, dashed, label) {
+      const rawLength = Math.hypot(vector.x, vector.y);
+      if (rawLength < 0.001) return;
+      const maxLength = label === 'v' ? 115 : 145;
+      const length = Math.min(maxLength, Math.max(18, rawLength * scale));
+      const direction = normalize(vector);
+      const end = { x: origin.x + direction.x * length, y: origin.y + direction.y * length };
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = label === 'v' ? 5 : 4;
+      ctx.lineCap = 'round';
+      ctx.setLineDash(dashed ? [9, 7] : []);
+      ctx.beginPath();
+      ctx.moveTo(origin.x, origin.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      drawArrowHead(ctx, end.x, end.y, Math.atan2(direction.y, direction.x), color);
+      ctx.font = '700 18px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const labelX = end.x + direction.x * 20;
+      const labelY = end.y + direction.y * 20;
+      const metrics = ctx.measureText(label);
+      const labelWidth = metrics.width + 16;
+      const labelHeight = 26;
+      ctx.fillStyle = 'rgba(255,255,255,0.96)';
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      roundRect(ctx, labelX - labelWidth / 2, labelY - labelHeight / 2, labelWidth, labelHeight, 7);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = colors.text;
+      ctx.fillText(label, labelX, labelY);
+      ctx.restore();
+    }
+
+    function drawArrowHead(ctx, x, y, angle, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-15, -8);
+      ctx.lineTo(-15, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawMiniLabels(ctx, turn) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.strokeStyle = colors.border;
+      ctx.lineWidth = 1;
+      roundRect(ctx, 22, 22, 288, 54, 12);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = colors.text;
+      ctx.font = '700 16px system-ui, sans-serif';
+      ctx.fillText(`Turn: ${turn.label}`, 38, 50);
+      ctx.font = '18px system-ui, sans-serif';
+      ctx.fillStyle = colors.muted;
+      ctx.restore();
+    }
+
+    function drawDriverView() {
+      const ctx = driverCtx;
+      ctx.clearRect(0, 0, driverCanvas.width, driverCanvas.height);
+      const car = getTrackState(state.sPx);
+      const lookahead = getTrackState(state.sPx + 90);
+      const further = getTrackState(state.sPx + 210);
+      const turn = getTurnInfo(car.kSignedM);
+      const roadAngle = getRoadBendAngle(car.kSignedM);
+      const centripetalAcceleration = state.speed * state.speed * car.kSignedM;
+      const wheelAngle = getWheelAngleFromCentripetalAcceleration(centripetalAcceleration);
+
+      drawSkyAndDash(ctx);
+      drawRoadAhead(ctx, car, lookahead, further, turn, roadAngle);
+      drawSteeringWheel(ctx, wheelAngle, turn);
+    }
+
+    function getRoadBendAngle(kSignedM) {
+      // Preserve the driver-view road behavior students liked: this visual bend
+      // represents the track shape and does not change with speed.
+      return Math.max(-0.95, Math.min(0.95, kSignedM * 35));
+    }
+
+    function getWheelAngleFromCentripetalAcceleration(aC) {
+      // The steering wheel represents how much inward acceleration the turn
+      // requires. The sign of aC follows the same convention as the road view:
+      // negative is left, positive is right.
+      const radiansPerMeterPerSecondSquared = 0.045;
+      const maxWheelAngle = 710 * Math.PI / 180;
+      return Math.max(-maxWheelAngle, Math.min(maxWheelAngle, aC * radiansPerMeterPerSecondSquared));
+    }
+
+    function drawSkyAndDash(ctx) {
+      const w = driverCanvas.width;
+      const h = driverCanvas.height;
+      ctx.save();
+      ctx.fillStyle = '#e0f2fe';
+      ctx.fillRect(0, 0, w, h * 0.45);
+      ctx.fillStyle = '#dcfce7';
+      ctx.fillRect(0, h * 0.43, w, h * 0.35);
+      ctx.fillStyle = '#1f2937';
+      ctx.fillRect(0, h * 0.68, w, h * 0.32);
+      ctx.restore();
+    }
+
+    function drawRoadAhead(ctx, car, lookahead, further, turn, steeringAngle) {
+      const w = driverCanvas.width;
+      const h = driverCanvas.height;
+      const horizonY = 205;
+      const bottomY = 382;
+      const center = w / 2;
+
+      // Use the displayed steering wheel angle as the single source of truth
+      // for the driver-view road. Negative wheel rotation bends the road left;
+      // positive wheel rotation bends it right.
+      const wheelTurn = Math.max(-1, Math.min(1, steeringAngle / 0.95));
+      const points = [];
+      const steps = 34;
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const y = bottomY + (horizonY - bottomY) * t;
+        const x = center + wheelTurn * 155 * Math.pow(t, 1.55);
+        const halfWidth = 185 + (34 - 185) * t;
+        points.push({ x, y, halfWidth });
+      }
+
+      ctx.save();
+      ctx.fillStyle = colors.road;
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const x = p.x - p.halfWidth;
+        if (i === 0) ctx.moveTo(x, p.y);
+        else ctx.lineTo(x, p.y);
+      }
+      for (let i = points.length - 1; i >= 0; i--) {
+        const p = points[i];
+        ctx.lineTo(p.x + p.halfWidth, p.y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = colors.roadLine;
+      ctx.lineWidth = 4;
+      ctx.setLineDash([18, 18]);
+      ctx.beginPath();
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.strokeStyle = colors.border;
+      roundRect(ctx, 22, 24, 335, 88, 12);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = colors.text;
+      ctx.font = '700 18px system-ui, sans-serif';
+      ctx.fillText(`Steering: ${turn.label}`, 42, 58);
+      ctx.font = '15px system-ui, sans-serif';
+      ctx.fillStyle = colors.muted;
+      ctx.fillText('Centripetal acceleration points', 42, 84);
+      ctx.fillText(turn.kind === 'straight' ? 'near zero on this part.' : `${turn.simple.toLowerCase()}, into the turn.`, 42, 104);
+      ctx.restore();
+    }
+
+    function drawSteeringWheel(ctx, steeringAngle, turn) {
+      const cx = driverCanvas.width / 2;
+      const cy = 400;
+      const radius = 78;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(steeringAngle);
+
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 16;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = '#6b7280';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = colors.warning;
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, -0.57 * Math.PI, -0.43 * Math.PI);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 8;
+      for (const angle of [-Math.PI / 2, Math.PI * 0.15, Math.PI * 0.85]) {
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(angle) * (radius - 12), Math.sin(angle) * (radius - 12));
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.arc(0, 0, 22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 14px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('↺ ↻', 0, 1);
+
+      ctx.fillStyle = colors.warning;
+      ctx.beginPath();
+      ctx.arc(0, -radius, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = colors.border;
+      roundRect(ctx, cx - 95, cy - 145, 190, 38, 10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = colors.text;
+      ctx.font = '700 15px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(turn.kind === 'straight' ? 'Wheel centered' : `Wheel turned ${turn.simple}`, cx, cy - 121);
+      ctx.restore();
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function getTurnInfo(kSignedM) {
+      if (Math.abs(kSignedM) < 0.01) {
+        return { kind: 'straight', label: 'Straight or nearly straight', simple: 'centered' };
+      }
+
+      // Canvas coordinates have y increasing downward, so the usual signed
+      // curvature convention is visually flipped. Negative signed curvature
+      // means the car is turning left from the driver's point of view.
+      if (kSignedM < 0) {
+        return { kind: 'left', label: 'Left turn', simple: 'left' };
+      }
+      return { kind: 'right', label: 'Right turn', simple: 'right' };
+    }
+
+    function updateReadouts() {
+      const car = getTrackState(state.sPx);
+      const turn = getTurnInfo(car.kSignedM);
+      const aT = state.tangentialAcceleration;
+      const aC = state.speed * state.speed * car.kSignedM;
+      const aTotal = Math.hypot(aT, aC);
+      const speedLimitReached = state.speed >= state.maxSpeed - 0.01 && aT > 0;
+
+      speedDisplay.textContent = `${state.speed.toFixed(1)} m/s`;
+      parallelDisplay.textContent = `${aT.toFixed(1)} m/s²`;
+      perpDisplay.textContent = `${Math.abs(aC).toFixed(1)} m/s²`;
+      totalDisplay.textContent = `${aTotal.toFixed(1)} m/s²`;
+      turnDisplay.textContent = turn.label;
+
+      const accelerationPhrase = getTangentialPhrase(aT, speedLimitReached);
+      tangentialValue.textContent = `Tangential acceleration: ${aT.toFixed(1)} m/s², ${accelerationPhrase}.`;
+      tangentialValue.className = speedLimitReached ? 'status warning' : Math.abs(aT) < 0.05 ? 'status' : 'status success';
+
+      const turnSentence = turn.kind === 'straight'
+        ? 'The car is on a straight or nearly straight section, so the centripetal acceleration is nearly zero.'
+        : `The car is in a ${turn.simple} turn, so the centripetal acceleration points ${turn.simple}, into the turn.`;
+      const tangentSentence = Math.abs(aT) < 0.05
+        ? 'The tangential acceleration is zero, so the speed is steady.'
+        : aT > 0
+          ? 'The tangential acceleration points with the velocity, so the car is speeding up.'
+          : 'The tangential acceleration points opposite the velocity, so the car is slowing down.';
+      const limitSentence = speedLimitReached ? ' The car is at the maximum allowed speed, so it cannot speed up further.' : '';
+      stateSummary.textContent = `Track: ${trackPresets[activeTrackKey].name}. ${turnSentence} ${tangentSentence}${limitSentence}`;
+      stateSummary.className = speedLimitReached ? 'status warning' : 'status';
+
+      dataTableBody.innerHTML = `
+        <tr>
+          <th scope="row">Velocity</th>
+          <td>${state.speed.toFixed(1)} m/s</td>
+          <td>Forward, tangent to the track</td>
+        </tr>
+        <tr>
+          <th scope="row">Tangential acceleration</th>
+          <td>${aT.toFixed(1)} m/s²</td>
+          <td>${getTangentialDirection(aT, speedLimitReached)}</td>
+        </tr>
+        <tr>
+          <th scope="row">Centripetal acceleration</th>
+          <td>${Math.abs(aC).toFixed(1)} m/s²</td>
+          <td>${turn.kind === 'straight' ? 'Nearly zero on this part of the track' : `Points ${turn.simple}, inward toward the center of the turn`}</td>
+        </tr>
+        <tr>
+          <th scope="row">Total acceleration</th>
+          <td>${aTotal.toFixed(1)} m/s²</td>
+          <td>Vector sum of the tangential and perpendicular components</td>
+        </tr>
+      `;
+    }
+
+    function getTangentialPhrase(aT, limitReached) {
+      if (limitReached) return 'maximum speed reached';
+      if (aT > 0.05) return 'speeding up';
+      if (aT < -0.05) return 'slowing down';
+      return 'coasting';
+    }
+
+    function getTangentialDirection(aT, limitReached) {
+      if (limitReached) return 'Points with the velocity, but speed is capped at the maximum';
+      if (aT > 0.05) return 'Points with the velocity; the car speeds up';
+      if (aT < -0.05) return 'Points opposite the velocity; the car slows down';
+      return 'Zero; speed is constant except for numerical rounding';
+    }
+
+    function draw() {
+      drawTrackView();
+      drawDriverView();
+      updateReadouts();
+    }
+
+    function animate(now) {
+      const dt = Math.min(0.04, (now - state.lastTime) / 1000);
+      state.lastTime = now;
+      if (state.running) updatePhysics(dt);
+      draw();
+      requestAnimationFrame(animate);
+    }
+
+    function resetSimulation() {
+      state.sPx = 0;
+      state.speed = 12;
+      tangentialSlider.value = 0;
+      constantSpeedMode.checked = false;
+      slowSpeedMode.checked = false;
+      state.tangentialAcceleration = 0;
+      state.running = true;
+      playPauseBtn.textContent = 'Pause';
+      draw();
+    }
+
+    function stepSimulation() {
+      updatePhysics(0.14);
+      draw();
+    }
+
+    playPauseBtn.addEventListener('click', () => {
+      state.running = !state.running;
+      playPauseBtn.textContent = state.running ? 'Pause' : 'Play';
+    });
+
+    stepBtn.addEventListener('click', () => {
+      const wasRunning = state.running;
+      state.running = false;
+      playPauseBtn.textContent = 'Play';
+      stepSimulation();
+      if (wasRunning) {
+        state.running = false;
+      }
+    });
+
+    resetBtn.addEventListener('click', resetSimulation);
+
+    constantSpeedMode.addEventListener('change', () => {
+      if (constantSpeedMode.checked) {
+        slowSpeedMode.checked = false;
+        tangentialSlider.value = 0;
+        state.tangentialAcceleration = 0;
+      }
+      draw();
+    });
+
+    slowSpeedMode.addEventListener('change', () => {
+      if (slowSpeedMode.checked) {
+        constantSpeedMode.checked = false;
+        tangentialSlider.value = 0;
+        state.tangentialAcceleration = 0;
+        state.speed = 18;
+      }
+      draw();
+    });
+
+    tangentialSlider.addEventListener('input', () => {
+      if (constantSpeedMode.checked) {
+        constantSpeedMode.checked = false;
+      }
+      if (slowSpeedMode.checked) {
+        slowSpeedMode.checked = false;
+      }
+      draw();
+    });
+
+    [showVelocity, showTotalAcceleration, showParallel, showPerpendicular].forEach(control => {
+      control.addEventListener('change', draw);
+    });
+
+
+    trackChoiceButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const nextTrack = button.dataset.track;
+        if (!trackPresets[nextTrack] || nextTrack === activeTrackKey) return;
+        activeTrackKey = nextTrack;
+        state.sPx = 0;
+        buildTrack();
+        trackChoiceButtons.forEach(choice => {
+          const selected = choice.dataset.track === activeTrackKey;
+          choice.setAttribute('aria-pressed', String(selected));
+        });
+        draw();
+      });
+    });
+
+    document.addEventListener('keydown', (event) => {
+      const activeTag = document.activeElement.tagName.toLowerCase();
+      const editing = activeTag === 'input' && document.activeElement.type !== 'range';
+      if (editing) return;
+      if (event.code === 'Space') {
+        event.preventDefault();
+        state.running = !state.running;
+        playPauseBtn.textContent = state.running ? 'Pause' : 'Play';
+      }
+      if (event.key.toLowerCase() === 'r') {
+        resetSimulation();
+      }
+      if (event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        state.running = false;
+        playPauseBtn.textContent = 'Play';
+        stepSimulation();
+      }
+    });
+
+    buildTrack();
+    draw();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
