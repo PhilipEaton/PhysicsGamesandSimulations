@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Capacitor Capacitor Circuit Brightness Ranking Game</title>
+  <style>
+    :root {
+      --page-bg: #f3f4f6;
+      --panel-bg: #ffffff;
+      --text: #111827;
+      --muted-text: #4b5563;
+      --border: #d1d5db;
+      --accent-blue: #2563eb;
+      --accent-blue-dark: #1d4ed8;
+      --success-green: #15803d;
+      --warning-amber: #f59e0b;
+      --error-red: #dc2626;
+      --focus-amber: #fbbf24;
+      --header-bg: #111827;
+      --header-text: #ffffff;
+      --canvas-bg: #f8fafc;
+      --wire: #111827;
+      --bulb-fill: #facc15;
+      --rank-fill: #2563eb;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+      --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.10);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--page-bg);
+      line-height: 1.5;
+    }
+
+    a { color: var(--accent-blue); }
+
+    a:focus-visible,
+    button:focus-visible,
+    canvas:focus-visible {
+      outline: 4px solid var(--focus-amber);
+      outline-offset: 3px;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 1rem;
+      top: 0.75rem;
+      z-index: 100;
+      transform: translateY(-140%);
+      padding: 0.65rem 0.9rem;
+      border-radius: var(--radius-md);
+      background: var(--focus-amber);
+      color: #111827;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .skip-link:focus { transform: translateY(0); }
+
+    header {
+      padding: 2rem 1.25rem;
+      background: var(--header-bg);
+      color: var(--header-text);
+    }
+
+    .header-inner {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.1;
+    }
+
+    header p {
+      max-width: 850px;
+      margin: 0.75rem 0 0;
+      color: #d1d5db;
+      font-size: 1.1rem;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 2rem));
+      margin: 1.25rem auto 2.5rem;
+    }
+
+    .card {
+      margin-bottom: 1.25rem;
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--panel-bg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card h2,
+    .card h3 {
+      margin-top: 0;
+      line-height: 1.2;
+    }
+
+    .card h2 { font-size: 1.45rem; }
+    .card h3 { font-size: 1.15rem; }
+
+    .layout-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.95fr) minmax(420px, 1.6fr);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (max-width: 900px) {
+      .layout-grid { grid-template-columns: 1fr; }
+    }
+
+    fieldset {
+      margin: 0 0 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    legend {
+      padding: 0 0.35rem;
+      font-weight: 700;
+    }
+
+    .button-grid,
+    .bulb-button-grid {
+      display: grid;
+      gap: 0.7rem;
+    }
+
+    .bulb-button-grid {
+      grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+      gap: 0.55rem;
+    }
+
+    button {
+      min-height: 44px;
+      border: 2px solid var(--accent-blue);
+      border-radius: var(--radius-md);
+      padding: 0.65rem 0.9rem;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 120ms ease, color 120ms ease, border-color 120ms ease, transform 80ms ease;
+    }
+
+    button:active { transform: translateY(1px); }
+
+    .primary-button {
+      background: var(--accent-blue);
+      color: white;
+    }
+
+    .primary-button:hover {
+      background: var(--accent-blue-dark);
+      border-color: var(--accent-blue-dark);
+    }
+
+    .secondary-button,
+    .bulb-select-button {
+      background: white;
+      color: var(--accent-blue);
+    }
+
+    .secondary-button:hover,
+    .bulb-select-button:hover {
+      background: #eff6ff;
+    }
+
+    .danger-button {
+      border-color: var(--error-red);
+      background: var(--error-red);
+      color: white;
+    }
+
+    .danger-button:hover {
+      background: #b91c1c;
+      border-color: #b91c1c;
+    }
+
+    .bulb-select-button {
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    .bulb-select-button[aria-pressed="true"] {
+      border-color: var(--accent-blue);
+      background: #dbeafe;
+      color: #1e3a8a;
+    }
+
+    .bulb-select-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .canvas-wrap {
+      overflow-x: auto;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: #eef2f7;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      max-width: 1100px;
+      height: auto;
+      margin: 0 auto;
+      border: 2px solid #111827;
+      border-radius: var(--radius-md);
+      background: var(--canvas-bg);
+      box-shadow: var(--shadow-md);
+    }
+
+    .status-box {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-left: 6px solid var(--accent-blue);
+      border-radius: var(--radius-md);
+      background: #eff6ff;
+    }
+
+    .status-box p { margin: 0; }
+
+    .ranking-readout {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 700px) {
+      .ranking-readout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .visual-bulb-selector {
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--panel-bg);
+    }
+
+    .readout-line {
+      padding: 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      background: #f9fafb;
+    }
+
+    .readout-line strong {
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .muted,
+    .note {
+      color: var(--muted-text);
+    }
+
+    .note {
+      margin-top: 0.75rem;
+      font-size: 0.95rem;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      margin-top: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    caption {
+      padding: 0.75rem;
+      text-align: left;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    th,
+    td {
+      padding: 0.7rem 0.8rem;
+      border-top: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f3f4f6;
+      font-weight: 700;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      clip-path: inset(50%);
+    }
+
+    .keyboard-list { margin-bottom: 0; }
+
+    .keyboard-list kbd {
+      display: inline-block;
+      min-width: 1.7rem;
+      padding: 0.1rem 0.35rem;
+      border: 1px solid var(--border);
+      border-radius: 0.35rem;
+      background: #f9fafb;
+      box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header>
+    <div class="header-inner">
+      <h1>Capacitor Capacitor Circuit Brightness Ranking Game</h1>
+      <p>
+        Rank identical bulbs from brightest to dimmest in randomly generated series-parallel circuits that include one or two identical capacitors.
+      </p>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <section class="card" aria-labelledby="how-to-title">
+      <h2 id="how-to-title">How to use</h2>
+      <p>
+        Select a capacitor time state, and rank the brighteness of the bulbs from birghtest to dimmest. 
+        <br><br>Click all bulbs that belong in the same brightest group. Move between brightness groupd by selecting <strong>Next dimmer group</strong> and <strong>Previous group</strong>.
+      </p>
+      <p class="note">
+        Keyboard shortcuts listed below, after Game actions.
+      </p>
+    </section>
+
+    <div class="layout-grid">
+      <section class="card" aria-labelledby="controls-title">
+        <h2 id="controls-title">Controls</h2>
+
+        <fieldset>
+          <legend>Capacitor time state</legend>
+          <p class="note">
+            At what time is this analsysis being done?
+          </p>
+          <div class="button-grid" role="radiogroup" aria-labelledby="capacitor-state-label">
+            <span id="capacitor-state-label" class="sr-only">Capacitor time state</span>
+            <label>
+              <input type="radio" name="capacitorState" value="initial" checked />
+              Immediately after being connected; capacitors initially uncharged
+            </label>
+            <label>
+              <input type="radio" name="capacitorState" value="longTime" />
+              After being connected for a long time
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Game actions</legend>
+          <div class="button-grid">
+            <button type="button" class="secondary-button" id="previousGroupButton">Previous group</button>
+            <button type="button" class="secondary-button" id="nextGroupButton">Next dimmer group</button>
+            <button type="button" class="primary-button" id="checkAnswerButton">Check answer</button>
+            <button type="button" class="danger-button" id="resetAnswerButton">Reset ranking</button>
+            <button type="button" class="primary-button" id="newCircuitButton">New circuit</button>
+          </div>
+        </fieldset>
+
+        <section aria-labelledby="keyboard-title">
+          <h3 id="keyboard-title">Keyboard shortcuts</h3>
+          <ul class="keyboard-list">
+            <li><kbd>A</kbd>–<kbd>H</kbd>: add that bulb, if present</li>
+            <li><kbd>Space</kbd>: next dimmer group</li>
+            <li><kbd>Backspace</kbd>: previous group</li>
+            <li><kbd>Enter</kbd>: check answer</li>
+            <li><kbd>R</kbd>: reset ranking</li>
+            <li><kbd>N</kbd>: new circuit</li>
+          </ul>
+        </section>
+      </section>
+
+      <section class="card" aria-labelledby="visualization-title">
+        <h2 id="visualization-title">Capacitor circuit puzzle</h2>
+        <div class="canvas-wrap">
+          <canvas
+            id="circuitCanvas"
+            width="1100"
+            height="680"
+            role="img"
+            tabindex="0"
+            aria-describedby="canvasDescription"
+          ></canvas>
+        </div>
+        <p id="canvasDescription" class="sr-only">
+          A randomly generated circuit diagram with one battery, labeled bulbs, and one or two capacitors.
+          The same state information is provided in the ranking readout and bulb table below.
+        </p>
+
+        <section class="visual-bulb-selector" aria-labelledby="build-ranking-title">
+          <h3 id="build-ranking-title">Build your ranking</h3>
+          <p id="current-group-readout">
+            Current brightness group: <strong id="currentGroupNumber">1</strong>
+          </p>
+          <div class="bulb-button-grid" id="bulbButtonGrid" aria-label="Bulb selection buttons"></div>
+
+          <div class="ranking-readout" aria-live="polite" aria-atomic="true">
+            <div class="readout-line">
+              <strong>Your ranking</strong>
+              <span id="userRankingText">(no bulbs selected yet)</span>
+            </div>
+            <div class="readout-line" id="correctAnswerLine" hidden>
+              <strong>Correct ranking</strong>
+              <span id="correctRankingText"></span>
+            </div>
+          </div>
+
+          <div class="status-box compact-status" role="status" aria-live="polite" aria-atomic="true">
+            <p id="feedbackText">Click the brightest bulb or bulbs first.</p>
+          </div>
+        </section>
+
+        <div class="status-box">
+          <p><strong>Circuit description:</strong> <span id="circuitDescriptionText"></span></p>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" aria-labelledby="data-title">
+      <h2 id="data-title">Bulb ranking table</h2>
+      <p>
+        This table gives a text alternative to the visual ranking markers. It does not reveal the hidden bulb voltages; it only shows the student’s current grouping.
+      </p>
+      <div class="table-scroll">
+        <table>
+          <caption>Current student ranking by bulb for the selected capacitor time state</caption>
+          <thead>
+            <tr>
+              <th scope="col">Bulb</th>
+              <th scope="col">Student group</th>
+              <th scope="col">Meaning</th>
+            </tr>
+          </thead>
+          <tbody id="bulbTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const CANVAS_WIDTH = 1100;
+    const CANVAS_HEIGHT = 680;
+
+    const COLORS = {
+      background: "#f8fafc",
+      wire: "#111827",
+      gray: "#6b7280",
+      white: "#ffffff",
+      blue: "#2563eb",
+      green: "#15803d",
+      yellow: "#facc15",
+      black: "#111827"
+    };
+
+    const WIRE_WIDTH = 4;
+    const BULB_RADIUS = 23;
+    const BULB_R = 1.0;
+    const BATTERY_V = 1.0;
+    const MAX_BULBS = 8;
+    const MIN_BULBS = 3;
+    const MAX_DEPTH = 4;
+    const MIN_CAPACITORS = 1;
+    const MAX_CAPACITORS = 2;
+    const DRAW_TOP = 95;
+    const DRAW_BOTTOM = 560;
+    const DRAW_LEFT = 125;
+    const DRAW_RIGHT = 1040;
+
+    const canvas = document.getElementById("circuitCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const feedbackText = document.getElementById("feedbackText");
+    const userRankingText = document.getElementById("userRankingText");
+    const circuitDescriptionText = document.getElementById("circuitDescriptionText");
+    const correctAnswerLine = document.getElementById("correctAnswerLine");
+    const correctRankingText = document.getElementById("correctRankingText");
+    const bulbButtonGrid = document.getElementById("bulbButtonGrid");
+    const bulbTableBody = document.getElementById("bulbTableBody");
+    const currentGroupNumber = document.getElementById("currentGroupNumber");
+    const capacitorStateInputs = document.querySelectorAll('input[name="capacitorState"]');
+
+    const previousGroupButton = document.getElementById("previousGroupButton");
+    const nextGroupButton = document.getElementById("nextGroupButton");
+    const checkAnswerButton = document.getElementById("checkAnswerButton");
+    const resetAnswerButton = document.getElementById("resetAnswerButton");
+    const newCircuitButton = document.getElementById("newCircuitButton");
+
+    function randInt(minInclusive, maxInclusive) {
+      return Math.floor(Math.random() * (maxInclusive - minInclusive + 1)) + minInclusive;
+    }
+
+    function choice(array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+    function shuffle(array) {
+      const copy = array.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = randInt(0, i);
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function arraysEqual(a, b) {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    function drawText(text, x, y, options = {}) {
+      const {
+        size = 24,
+        color = COLORS.black,
+        align = "left",
+        baseline = "top",
+        font = "system-ui, Arial, sans-serif",
+        weight = "400"
+      } = options;
+
+      ctx.font = `${weight} ${size}px ${font}`;
+      ctx.fillStyle = color;
+      ctx.textAlign = align;
+      ctx.textBaseline = baseline;
+      ctx.fillText(text, x, y);
+    }
+
+    function drawWire(start, end) {
+      ctx.strokeStyle = COLORS.wire;
+      ctx.lineWidth = WIRE_WIDTH;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(start.x, start.y);
+      ctx.lineTo(end.x, end.y);
+      ctx.stroke();
+    }
+
+    function drawCircle(x, y, r, fillColor, strokeColor = null, strokeWidth = 1) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      if (fillColor) {
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+      }
+      if (strokeColor) {
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = strokeWidth;
+        ctx.stroke();
+      }
+    }
+
+    function pointInRect(pos, rect) {
+      return pos.x >= rect.x && pos.x <= rect.x + rect.w && pos.y >= rect.y && pos.y <= rect.y + rect.h;
+    }
+
+    function getCanvasPointerPosition(event) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      return {
+        x: (event.clientX - rect.left) * scaleX,
+        y: (event.clientY - rect.top) * scaleY
+      };
+    }
+
+    class Bulb {
+      constructor(label) {
+        this.kind = "bulb";
+        this.label = label;
+        this.voltage = 0.0;
+        this.rect = { x: 0, y: 0, w: 0, h: 0 };
+      }
+    }
+
+    class Capacitor {
+      constructor(label) {
+        this.kind = "capacitor";
+        this.label = label;
+        this.rect = { x: 0, y: 0, w: 0, h: 0 };
+      }
+    }
+
+    class Series {
+      constructor(children) {
+        this.kind = "series";
+        this.children = children;
+      }
+    }
+
+    class Parallel {
+      constructor(children) {
+        this.kind = "parallel";
+        this.children = children;
+      }
+    }
+
+    function splitInteger(n, k) {
+      const possibleCuts = [];
+      for (let i = 1; i < n; i++) {
+        possibleCuts.push(i);
+      }
+      const cuts = shuffle(possibleCuts).slice(0, k - 1).sort((a, b) => a - b);
+      const pieces = [];
+      let prev = 0;
+      for (const c of cuts) {
+        pieces.push(c - prev);
+        prev = c;
+      }
+      pieces.push(n - prev);
+      return pieces;
+    }
+
+    function generateCircuit(numElements, labels, depth = 0, forceType = null) {
+      if (numElements === 1 || depth >= MAX_DEPTH) {
+        return labels.shift();
+      }
+
+      let NodeClass;
+
+      if (forceType === "series") {
+        NodeClass = Series;
+      } else if (forceType === "parallel") {
+        NodeClass = Parallel;
+      } else {
+        NodeClass = choice([Series, Parallel]);
+      }
+
+      const k = (numElements >= 4 && Math.random() < 0.25) ? 3 : 2;
+      const pieces = splitInteger(numElements, k);
+      const children = [];
+
+      for (const piece of pieces) {
+        children.push(generateCircuit(piece, labels, depth + 1));
+      }
+
+      return new NodeClass(children);
+    }
+
+    function makeRandomLeafElements() {
+      const numBulbs = randInt(4, MAX_BULBS);
+      const numCapacitors = randInt(MIN_CAPACITORS, MAX_CAPACITORS);
+
+      const leaves = [];
+
+      for (let i = 0; i < numBulbs; i++) {
+        leaves.push(new Bulb(String.fromCharCode("A".charCodeAt(0) + i)));
+      }
+
+      for (let i = 0; i < numCapacitors; i++) {
+        leaves.push(new Capacitor(String(i + 1)));
+      }
+
+      return shuffle(leaves);
+    }
+
+    function takeFirstKind(leaves, kind) {
+      const index = leaves.findIndex(element => element.kind === kind);
+
+      if (index === -1) {
+        return null;
+      }
+
+      return leaves.splice(index, 1)[0];
+    }
+
+    function takeAny(leaves) {
+      return leaves.splice(randInt(0, leaves.length - 1), 1)[0];
+    }
+
+    function makeNewRandomCircuit() {
+      const leaves = makeRandomLeafElements();
+      const numElements = leaves.length;
+
+      const template = choice([
+        "random",
+        "series_with_parallel",
+        "parallel_with_series",
+        "capacitor_bypass",
+        "capacitor_series_branch"
+      ]);
+
+      if (template === "capacitor_bypass" && numElements >= 5) {
+        const capacitor = takeFirstKind(leaves, "capacitor");
+        const bulbInParallel = takeFirstKind(leaves, "bulb");
+        const left = takeAny(leaves);
+        const right = takeAny(leaves);
+
+        if (capacitor && bulbInParallel && left && right) {
+          return new Series([
+            left,
+            new Parallel([
+              bulbInParallel,
+              capacitor
+            ]),
+            right,
+            ...leaves
+          ]);
+        }
+      }
+
+      if (template === "capacitor_series_branch" && numElements >= 5) {
+        const capacitor = takeFirstKind(leaves, "capacitor");
+        const bulbWithCapacitor = takeFirstKind(leaves, "bulb");
+        const otherBulb1 = takeFirstKind(leaves, "bulb");
+        const otherBulb2 = takeFirstKind(leaves, "bulb");
+
+        if (capacitor && bulbWithCapacitor && otherBulb1 && otherBulb2) {
+          const branches = [
+            new Series([bulbWithCapacitor, capacitor]),
+            new Series([otherBulb1, otherBulb2])
+          ];
+
+          if (leaves.length > 0) {
+            branches.push(new Series(leaves));
+          }
+
+          return new Parallel(branches);
+        }
+      }
+
+      if (template === "series_with_parallel" && numElements >= 4) {
+        const left = takeAny(leaves);
+        const right = takeAny(leaves);
+        const middle = new Parallel(leaves.splice(0, Math.min(3, leaves.length)));
+        return new Series([left, middle, right, ...leaves]);
+      }
+
+      if (template === "parallel_with_series" && numElements >= 4) {
+        const branch1 = new Series([takeAny(leaves), takeAny(leaves)]);
+        const branch2 = new Series(leaves.splice(0, Math.min(3, leaves.length)));
+        const branches = [branch1, branch2];
+
+        if (leaves.length > 0) {
+          branches.push(new Series(leaves));
+        }
+
+        return new Parallel(branches);
+      }
+
+      return generateCircuit(numElements, leaves.slice());
+    }
+
+    function getCapacitorState() {
+      const selected = document.querySelector('input[name="capacitorState"]:checked');
+      return selected ? selected.value : "initial";
+    }
+
+    function elementEffectiveResistance(node, capacitorState) {
+      if (node.kind === "bulb") {
+        return BULB_R;
+      }
+
+      if (node.kind === "capacitor") {
+        return capacitorState === "initial" ? 0 : Infinity;
+      }
+
+      if (node.kind === "series") {
+        let total = 0;
+
+        for (const child of node.children) {
+          const childR = elementEffectiveResistance(child, capacitorState);
+
+          if (!Number.isFinite(childR)) {
+            return Infinity;
+          }
+
+          total += childR;
+        }
+
+        return total;
+      }
+
+      if (node.kind === "parallel") {
+        const childRs = node.children.map(child => elementEffectiveResistance(child, capacitorState));
+
+        if (childRs.some(r => r === 0)) {
+          return 0;
+        }
+
+        const finiteRs = childRs.filter(r => Number.isFinite(r));
+
+        if (finiteRs.length === 0) {
+          return Infinity;
+        }
+
+        let invTotal = 0.0;
+
+        for (const r of finiteRs) {
+          invTotal += 1.0 / r;
+        }
+
+        return 1.0 / invTotal;
+      }
+
+      throw new Error("Unknown node kind");
+    }
+
+    function setBulbVoltages(node, voltage) {
+      if (node.kind === "bulb") {
+        node.voltage = voltage;
+        return;
+      }
+
+      if (node.children) {
+        for (const child of node.children) {
+          setBulbVoltages(child, voltage);
+        }
+      }
+    }
+
+    function assignVoltages(node, voltage, capacitorState = getCapacitorState()) {
+      if (node.kind === "bulb") {
+        node.voltage = voltage;
+        return;
+      }
+
+      if (node.kind === "capacitor") {
+        return;
+      }
+
+      if (node.kind === "series") {
+        const totalR = elementEffectiveResistance(node, capacitorState);
+
+        if (!Number.isFinite(totalR) || totalR === 0) {
+          setBulbVoltages(node, 0);
+          return;
+        }
+
+        for (const child of node.children) {
+          const childR = elementEffectiveResistance(child, capacitorState);
+
+          if (!Number.isFinite(childR)) {
+            setBulbVoltages(child, 0);
+          } else {
+            const childV = voltage * childR / totalR;
+            assignVoltages(child, childV, capacitorState);
+          }
+        }
+
+        return;
+      }
+
+      if (node.kind === "parallel") {
+        const totalR = elementEffectiveResistance(node, capacitorState);
+
+        if (!Number.isFinite(totalR)) {
+          setBulbVoltages(node, 0);
+          return;
+        }
+
+        if (totalR === 0) {
+          setBulbVoltages(node, 0);
+          return;
+        }
+
+        for (const child of node.children) {
+          const childR = elementEffectiveResistance(child, capacitorState);
+
+          if (!Number.isFinite(childR)) {
+            setBulbVoltages(child, 0);
+          } else {
+            assignVoltages(child, voltage, capacitorState);
+          }
+        }
+      }
+    }
+
+    function collectBulbs(node) {
+      if (node.kind === "bulb") {
+        return [node];
+      }
+
+      if (node.kind === "capacitor") {
+        return [];
+      }
+
+      let bulbs = [];
+
+      for (const child of node.children) {
+        bulbs = bulbs.concat(collectBulbs(child));
+      }
+
+      return bulbs;
+    }
+
+    function correctRankingGroups(bulbs, tolerance = 1e-6) {
+      const sortedBulbs = bulbs.slice().sort((a, b) => b.voltage - a.voltage);
+      const groups = [];
+      for (const bulb of sortedBulbs) {
+        let placed = false;
+        for (const group of groups) {
+          const representativeLabel = group[0];
+          const representative = bulbs.find(b => b.label === representativeLabel);
+          if (Math.abs(bulb.voltage - representative.voltage) < tolerance) {
+            group.push(bulb.label);
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          groups.push([bulb.label]);
+        }
+      }
+      for (const group of groups) {
+        group.sort();
+      }
+      return groups;
+    }
+
+    function normalizeUserGroups(groups) {
+      const clean = [];
+      for (const group of groups) {
+        if (group.length > 0) {
+          clean.push(group.slice().sort());
+        }
+      }
+      return clean;
+    }
+
+    function rankingToString(groups) {
+      if (groups.length === 0) {
+        return "(no bulbs selected yet)";
+      }
+      return groups.map(group => group.join(" = ")).join(" > ");
+    }
+
+    function listToSentence(items, connector = "and") {
+      if (items.length === 0) {
+        return "";
+      }
+
+      if (items.length === 1) {
+        return items[0];
+      }
+
+      if (items.length === 2) {
+        return `${items[0]} ${connector} ${items[1]}`;
+      }
+
+      return `${items.slice(0, -1).join(", ")}, ${connector} ${items[items.length - 1]}`;
+    }
+
+    function listToSeriesSentence(items) {
+      if (items.length === 0) {
+        return "";
+      }
+
+      if (items.length === 1) {
+        return items[0];
+      }
+
+      if (items.length === 2) {
+        return `${items[0]} in series with ${items[1]}`;
+      }
+
+      const first = items[0];
+      const rest = listToSentence(items.slice(1), "and");
+      return `${first} in series with ${rest}`;
+    }
+
+    function capacitorStateSentence() {
+      return getCapacitorState() === "initial"
+        ? "The capacitors were just connected and were initially uncharged, so each capacitor acts like a conducting path at this instant."
+        : "The capacitors have been connected for a long time, so each capacitor acts like an open break in steady-state DC.";
+    }
+
+    function describeCircuitNode(node, context = "root") {
+      if (node.kind === "bulb") {
+        return `bulb ${node.label}`;
+      }
+
+      if (node.kind === "capacitor") {
+        return `capacitor ${node.label}`;
+      }
+
+      if (node.kind === "series") {
+        const pieces = node.children.map(child => describeCircuitNode(child, "series"));
+
+        if (context === "root") {
+          return `${listToSeriesSentence(pieces)} connected in series with the battery.`;
+        }
+
+        if (context === "branch") {
+          return `a series branch containing ${listToSeriesSentence(pieces)}`;
+        }
+
+        return `a series group containing ${listToSeriesSentence(pieces)}`;
+      }
+
+      if (node.kind === "parallel") {
+        if (node.children.length < 2) {
+          return describeCircuitNode(node.children[0], context);
+        }
+
+        const branches = node.children.map((child, index) => {
+          return `branch ${index + 1} has ${describeCircuitNode(child, "branch")}`;
+        });
+
+        return `a parallel group where ${listToSentence(branches, "and")}`;
+      }
+
+      return "an unknown circuit element";
+    }
+
+    function measureNode(node) {
+      if (node.kind === "bulb" || node.kind === "capacitor") {
+        return { w: 90, h: 80 };
+      }
+      if (node.kind === "series") {
+        const childSizes = node.children.map(child => measureNode(child));
+        const width = childSizes.reduce((total, size) => total + size.w, 0) + 30 * (childSizes.length - 1);
+        const height = Math.max(...childSizes.map(size => size.h));
+        return { w: width, h: height };
+      }
+      if (node.kind === "parallel") {
+        const childSizes = node.children.map(child => measureNode(child));
+        const width = Math.max(...childSizes.map(size => size.w)) + 120;
+        const height = childSizes.reduce((total, size) => total + size.h, 0) + 25 * (childSizes.length - 1);
+        return { w: width, h: height };
+      }
+      throw new Error("Unknown node kind");
+    }
+
+    function circuitFitsDrawSpace(circuit, marginX = 20, marginY = 20) {
+      const needed = measureNode(circuit);
+      const availableW = (DRAW_RIGHT - DRAW_LEFT) - 2 * marginX;
+      const availableH = (DRAW_BOTTOM - DRAW_TOP) - 2 * marginY;
+      return needed.w <= availableW && needed.h <= availableH;
+    }
+
+    function drawBulb(bulb, x, y, w, h) {
+      const cy = y + h / 2;
+      const leftPort = { x, y: cy };
+      const rightPort = { x: x + w, y: cy };
+      const center = { x: x + w / 2, y: cy };
+
+      drawWire(leftPort, { x: center.x - BULB_RADIUS, y: cy });
+      drawWire({ x: center.x + BULB_RADIUS, y: cy }, rightPort);
+      drawCircle(center.x, center.y, BULB_RADIUS, COLORS.yellow, COLORS.black, 3);
+
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(center.x, center.y, 13, Math.PI, 2 * Math.PI);
+      ctx.stroke();
+
+      drawText(bulb.label, center.x, center.y - 35, {
+        size: 30,
+        color: COLORS.black,
+        align: "center",
+        baseline: "middle",
+        weight: "700"
+      });
+
+      bulb.rect = {
+        x: center.x - BULB_RADIUS,
+        y: center.y - BULB_RADIUS,
+        w: 2 * BULB_RADIUS,
+        h: 2 * BULB_RADIUS
+      };
+      return { leftPort, rightPort };
+    }
+
+    function drawCapacitor(capacitor, x, y, w, h) {
+      const cy = y + h / 2;
+      const leftPort = { x, y: cy };
+      const rightPort = { x: x + w, y: cy };
+      const center = { x: x + w / 2, y: cy };
+
+      const plateGap = 8;
+      const plateHeight = 42;
+      const leftPlateX = center.x - plateGap;
+      const rightPlateX = center.x + plateGap;
+
+      drawWire(leftPort, { x: leftPlateX, y: cy });
+      drawWire({ x: rightPlateX, y: cy }, rightPort);
+
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+
+      ctx.beginPath();
+      ctx.moveTo(leftPlateX, cy - plateHeight / 2);
+      ctx.lineTo(leftPlateX, cy + plateHeight / 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(rightPlateX, cy - plateHeight / 2);
+      ctx.lineTo(rightPlateX, cy + plateHeight / 2);
+      ctx.stroke();
+
+      drawText(`C${capacitor.label}`, center.x, center.y - 35, {
+        size: 28,
+        color: COLORS.black,
+        align: "center",
+        baseline: "middle",
+        weight: "700"
+      });
+
+      capacitor.rect = {
+        x: center.x - 28,
+        y: center.y - 28,
+        w: 56,
+        h: 56
+      };
+
+      return { leftPort, rightPort };
+    }
+
+    function drawNode(node, x, y, w, h) {
+      if (node.kind === "bulb") {
+        return drawBulb(node, x, y, w, h);
+      }
+
+      if (node.kind === "capacitor") {
+        return drawCapacitor(node, x, y, w, h);
+      }
+
+      if (node.kind === "series") {
+        const childSizes = node.children.map(child => measureNode(child));
+        const spacing = 30;
+        const totalChildWidth = childSizes.reduce((total, size) => total + size.w, 0);
+        const totalWidth = totalChildWidth + spacing * (node.children.length - 1);
+        let currentX = x + (w - totalWidth) / 2;
+        let previousRight = null;
+        let firstLeft = null;
+        let lastRight = null;
+
+        for (let i = 0; i < node.children.length; i++) {
+          const child = node.children[i];
+          const size = childSizes[i];
+          const childY = y + (h - size.h) / 2;
+          const ports = drawNode(child, currentX, childY, size.w, size.h);
+          if (previousRight !== null) {
+            drawWire(previousRight, ports.leftPort);
+          }
+          if (firstLeft === null) {
+            firstLeft = ports.leftPort;
+          }
+          previousRight = ports.rightPort;
+          lastRight = ports.rightPort;
+          currentX += size.w + spacing;
+        }
+        return { leftPort: firstLeft, rightPort: lastRight };
+      }
+
+      if (node.kind === "parallel") {
+        const childSizes = node.children.map(child => measureNode(child));
+        const busLeftX = x + 35;
+        const busRightX = x + w - 35;
+        const innerX = x + 70;
+        const innerW = w - 140;
+        const spacing = 25;
+        const totalChildHeight = childSizes.reduce((total, size) => total + size.h, 0);
+        const totalHeight = totalChildHeight + spacing * (node.children.length - 1);
+        let currentY = y + (h - totalHeight) / 2;
+        const branchLeftPorts = [];
+
+        for (let i = 0; i < node.children.length; i++) {
+          const child = node.children[i];
+          const size = childSizes[i];
+          const childX = innerX + (innerW - size.w) / 2;
+          const ports = drawNode(child, childX, currentY, size.w, size.h);
+          drawWire({ x: busLeftX, y: ports.leftPort.y }, ports.leftPort);
+          drawWire(ports.rightPort, { x: busRightX, y: ports.rightPort.y });
+          branchLeftPorts.push({ x: busLeftX, y: ports.leftPort.y });
+          currentY += size.h + spacing;
+        }
+
+        const topY = branchLeftPorts[0].y;
+        const bottomY = branchLeftPorts[branchLeftPorts.length - 1].y;
+        const centerY = y + h / 2;
+        drawWire({ x: busLeftX, y: topY }, { x: busLeftX, y: bottomY });
+        drawWire({ x: busRightX, y: topY }, { x: busRightX, y: bottomY });
+
+        const leftPort = { x, y: centerY };
+        const rightPort = { x: x + w, y: centerY };
+        drawWire(leftPort, { x: busLeftX, y: centerY });
+        drawWire({ x: busRightX, y: centerY }, rightPort);
+        return { leftPort, rightPort };
+      }
+      throw new Error("Unknown node kind");
+    }
+
+    function drawBattery(leftPort) {
+      const batteryX = 55;
+      const batteryY = leftPort.y;
+      const longPlateX = batteryX;
+      const shortPlateX = batteryX + 22;
+
+      drawWire({ x: shortPlateX, y: batteryY }, leftPort);
+
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(longPlateX, batteryY - 32);
+      ctx.lineTo(longPlateX, batteryY + 32);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(shortPlateX, batteryY - 20);
+      ctx.lineTo(shortPlateX, batteryY + 20);
+      ctx.stroke();
+
+      drawText("+", batteryX - 7, batteryY - 62, { size: 24, color: COLORS.black });
+      drawText("−", batteryX + 15, batteryY + 35, { size: 24, color: COLORS.black });
+      drawText("Battery", batteryX - 25, batteryY - 95, { size: 24, color: COLORS.black, weight: "700" });
+    }
+
+    function drawReturnWire(leftPort, rightPort) {
+      const batteryX = 55;
+      const lowerTerminal = { x: batteryX, y: leftPort.y };
+      const returnY = DRAW_BOTTOM + 5;
+      const returnX = batteryX - 35;
+      drawWire(rightPort, { x: rightPort.x, y: returnY });
+      drawWire({ x: rightPort.x, y: returnY }, { x: returnX, y: returnY });
+      drawWire({ x: returnX, y: returnY }, { x: returnX, y: lowerTerminal.y });
+      drawWire({ x: returnX, y: lowerTerminal.y }, lowerTerminal);
+    }
+
+    function drawSelectedMarkers(state) {
+      for (let groupIndex = 0; groupIndex < state.userGroups.length; groupIndex++) {
+        const group = state.userGroups[groupIndex];
+        for (const label of group) {
+          const bulb = state.bulbs.find(b => b.label === label);
+          if (!bulb) {
+            continue;
+          }
+          const markerCenter = {
+            x: bulb.rect.x + bulb.rect.w / 2,
+            y: bulb.rect.y + bulb.rect.h / 2
+          };
+          ctx.save();
+          ctx.globalAlpha = 0.9;
+          drawCircle(markerCenter.x, markerCenter.y, 15, COLORS.blue, COLORS.white, 2);
+          ctx.restore();
+          drawText(String(groupIndex + 1), markerCenter.x, markerCenter.y, {
+            size: 21,
+            color: COLORS.white,
+            align: "center",
+            baseline: "middle",
+            weight: "700"
+          });
+        }
+      }
+    }
+
+    function newGame() {
+      const maxAttempts = 150;
+      let circuit = null;
+
+      for (let i = 0; i < maxAttempts; i++) {
+        const candidate = makeNewRandomCircuit();
+
+        if (circuitFitsDrawSpace(candidate)) {
+          circuit = candidate;
+          break;
+        }
+      }
+
+      if (circuit === null) {
+        circuit = new Series([
+          new Bulb("A"),
+          new Parallel([
+            new Bulb("B"),
+            new Capacitor("1")
+          ]),
+          new Bulb("C"),
+          new Capacitor("2"),
+          new Bulb("D")
+        ]);
+      }
+
+      assignVoltages(circuit, BATTERY_V, getCapacitorState());
+
+      const bulbs = collectBulbs(circuit);
+      const answer = correctRankingGroups(bulbs);
+
+      return {
+        circuit,
+        bulbs,
+        answer,
+        userGroups: [[]],
+        selected: new Set(),
+        feedback: "Click the brightest bulb or bulbs first.",
+        showAnswer: false
+      };
+    }
+
+    function recomputeAnswerForCurrentState() {
+      assignVoltages(state.circuit, BATTERY_V, getCapacitorState());
+      state.answer = correctRankingGroups(state.bulbs);
+      resetAnswer(state);
+      state.feedback = "Capacitor time state changed. Ranking reset for the new circuit behavior.";
+    }
+
+    function removeBulbFromRanking(state, label) {
+      let removedFromGroup = null;
+
+      for (let i = 0; i < state.userGroups.length; i++) {
+        const index = state.userGroups[i].indexOf(label);
+
+        if (index !== -1) {
+          state.userGroups[i].splice(index, 1);
+          removedFromGroup = i + 1;
+          break;
+        }
+      }
+
+      state.selected.delete(label);
+
+      // Remove empty groups, then preserve one usable current group.
+      state.userGroups = state.userGroups.filter(group => group.length > 0);
+
+      if (state.userGroups.length === 0) {
+        state.userGroups = [[]];
+      } else if (state.selected.size < state.bulbs.length) {
+        state.userGroups.push([]);
+      }
+
+      state.feedback = removedFromGroup === null
+        ? `Bulb ${label} was not in your ranking.`
+        : `Removed bulb ${label} from brightness group ${removedFromGroup}.`;
+
+      state.showAnswer = false;
+    }
+
+    function handleBulbClick(state, label) {
+      if (state.selected.has(label)) {
+        removeBulbFromRanking(state, label);
+        updateAll();
+        return;
+      }
+
+      state.userGroups[state.userGroups.length - 1].push(label);
+      state.selected.add(label);
+      state.feedback = `Added bulb ${label} to brightness group ${state.userGroups.length}.`;
+      state.showAnswer = false;
+
+      updateAll();
+    }
+
+    function nextGroup(state) {
+      const currentGroup = state.userGroups[state.userGroups.length - 1];
+      if (currentGroup.length === 0) {
+        state.feedback = "Add at least one bulb before starting the next group.";
+        updateAll();
+        return;
+      }
+      if (state.selected.size === state.bulbs.length) {
+        state.feedback = "All bulbs are already placed. Check your answer.";
+        updateAll();
+        return;
+      }
+      state.userGroups.push([]);
+      state.feedback = `Now click the bulb or bulbs in brightness group ${state.userGroups.length}.`;
+      state.showAnswer = false;
+      updateAll();
+    }
+
+    function previousGroup(state) {
+      if (state.userGroups.length === 1 && state.userGroups[0].length === 0) {
+        state.feedback = "You are already at the first brightness group.";
+        updateAll();
+        return;
+      }
+
+      const currentGroup = state.userGroups[state.userGroups.length - 1];
+      if (currentGroup.length > 0) {
+        for (const label of currentGroup) {
+          state.selected.delete(label);
+        }
+        if (state.userGroups.length > 1) {
+          state.userGroups.pop();
+          state.feedback = "Moved back one group. Re-enter the next-dimmer group when ready.";
+        } else {
+          state.userGroups[0] = [];
+          state.feedback = "Cleared the first brightness group.";
+        }
+        state.showAnswer = false;
+        updateAll();
+        return;
+      }
+
+      if (state.userGroups.length > 1) {
+        state.userGroups.pop();
+        state.feedback = "Moved back to the previous brightness group.";
+      } else {
+        state.feedback = "You are already at the first brightness group.";
+      }
+      state.showAnswer = false;
+      updateAll();
+    }
+
+    function resetAnswer(state) {
+      state.userGroups = [[]];
+      state.selected = new Set();
+      state.feedback = "Answer reset. Click the brightest bulb or bulbs first.";
+      state.showAnswer = false;
+      updateAll();
+    }
+
+    function checkAnswer(state) {
+      const user = normalizeUserGroups(state.userGroups);
+      const correct = state.answer;
+      if (state.selected.size < state.bulbs.length) {
+        state.feedback = "You have not placed every bulb yet.";
+        state.showAnswer = false;
+        updateAll();
+        return;
+      }
+      if (arraysEqual(user, correct)) {
+        state.feedback = "Correct! Nice ranking.";
+        state.showAnswer = true;
+      } else {
+        state.feedback = "Not quite. Compare equal-brightness groups and try again.";
+        state.showAnswer = false;
+      }
+      updateAll();
+    }
+
+    function updateBulbButtons() {
+      bulbButtonGrid.innerHTML = "";
+      const sortedBulbs = state.bulbs.slice().sort((a, b) => a.label.localeCompare(b.label));
+
+      for (const bulb of sortedBulbs) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "bulb-select-button";
+        button.textContent = `Bulb ${bulb.label}`;
+        button.setAttribute("aria-pressed", state.selected.has(bulb.label) ? "true" : "false");
+        button.addEventListener("click", () => handleBulbClick(state, bulb.label));
+        bulbButtonGrid.appendChild(button);
+      }
+    }
+
+    function updateRankingReadouts() {
+      const userGroups = normalizeUserGroups(state.userGroups);
+      const userText = rankingToString(userGroups);
+
+      userRankingText.textContent = userText;
+      feedbackText.textContent = state.feedback;
+      circuitDescriptionText.textContent = `${capacitorStateSentence()} Circuit layout: ${describeCircuitNode(state.circuit)}`;
+      currentGroupNumber.textContent = String(state.userGroups.length);
+
+      if (state.showAnswer) {
+        correctAnswerLine.hidden = false;
+        correctRankingText.textContent = rankingToString(state.answer);
+      } else {
+        correctAnswerLine.hidden = true;
+        correctRankingText.textContent = "";
+      }
+    }
+
+    function findStudentGroupNumber(label) {
+      for (let i = 0; i < state.userGroups.length; i++) {
+        if (state.userGroups[i].includes(label)) {
+          return i + 1;
+        }
+      }
+      return null;
+    }
+
+    function updateBulbTable() {
+      bulbTableBody.innerHTML = "";
+      const sortedBulbs = state.bulbs.slice().sort((a, b) => a.label.localeCompare(b.label));
+
+      for (const bulb of sortedBulbs) {
+        const row = document.createElement("tr");
+        const bulbCell = document.createElement("th");
+        bulbCell.scope = "row";
+        bulbCell.textContent = `Bulb ${bulb.label}`;
+        const groupCell = document.createElement("td");
+        const meaningCell = document.createElement("td");
+        const groupNumber = findStudentGroupNumber(bulb.label);
+
+        if (groupNumber === null) {
+          groupCell.textContent = "Not placed";
+          meaningCell.textContent = "This bulb has not been added to the ranking yet.";
+        } else {
+          groupCell.textContent = String(groupNumber);
+          meaningCell.textContent = groupNumber === 1
+            ? "Currently ranked in the brightest group."
+            : `Currently ranked in dimmer group ${groupNumber}.`;
+        }
+        row.appendChild(bulbCell);
+        row.appendChild(groupCell);
+        row.appendChild(meaningCell);
+        bulbTableBody.appendChild(row);
+      }
+    }
+
+    function updateAll() {
+      updateBulbButtons();
+      updateRankingReadouts();
+      updateBulbTable();
+      draw();
+    }
+
+    function draw() {
+      ctx.fillStyle = COLORS.background;
+      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      drawText("Capacitor Circuit Brightness Ranking", 30, 18, { size: 38, color: COLORS.black, weight: "700" });
+      drawText(getCapacitorState() === "initial" ? "Just connected: capacitors act like conducting paths." : "Long time later: capacitors act like open breaks.", 30, 60, { size: 20, color: COLORS.gray });
+
+      const circuit = state.circuit;
+      const needed = measureNode(circuit);
+      const drawW = needed.w;
+      const drawH = needed.h;
+      const x = DRAW_LEFT + (DRAW_RIGHT - DRAW_LEFT - drawW) / 2;
+      const y = DRAW_TOP + (DRAW_BOTTOM - DRAW_TOP - drawH) / 2;
+      const ports = drawNode(circuit, x, y, drawW, drawH);
+
+      drawBattery(ports.leftPort);
+      drawReturnWire(ports.leftPort, ports.rightPort);
+      drawSelectedMarkers(state);
+    }
+
+    canvas.addEventListener("mousedown", event => {
+      const pos = getCanvasPointerPosition(event);
+      for (const bulb of state.bulbs) {
+        if (pointInRect(pos, bulb.rect)) {
+          handleBulbClick(state, bulb.label);
+          return;
+        }
+      }
+    });
+
+    previousGroupButton.addEventListener("click", () => previousGroup(state));
+    nextGroupButton.addEventListener("click", () => nextGroup(state));
+    checkAnswerButton.addEventListener("click", () => checkAnswer(state));
+    resetAnswerButton.addEventListener("click", () => resetAnswer(state));
+    newCircuitButton.addEventListener("click", () => {
+      state = newGame();
+      updateAll();
+    });
+
+    capacitorStateInputs.forEach(input => {
+      input.addEventListener("change", () => {
+        recomputeAnswerForCurrentState();
+      });
+    });
+
+    window.addEventListener("keydown", event => {
+      const activeTag = document.activeElement.tagName.toLowerCase();
+      if (activeTag === "input" || activeTag === "textarea") {
+        return;
+      }
+
+      const key = event.key.toUpperCase();
+      if (key.length === 1 && key >= "A" && key <= "H") {
+        const bulb = state.bulbs.find(candidate => candidate.label === key);
+        if (bulb) {
+          event.preventDefault();
+          handleBulbClick(state, key);
+        }
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        checkAnswer(state);
+      } else if (event.key === " " || event.code === "Space") {
+        event.preventDefault();
+        nextGroup(state);
+      } else if (event.key === "Backspace") {
+        event.preventDefault();
+        previousGroup(state);
+      } else if (key === "R") {
+        event.preventDefault();
+        resetAnswer(state);
+      } else if (key === "N") {
+        event.preventDefault();
+        state = newGame();
+        updateAll();
+      }
+    });
+
+    let state = newGame();
+    updateAll();
+  </script>
+</body>
+</html>
