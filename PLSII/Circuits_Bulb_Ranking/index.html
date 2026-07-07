@@ -239,8 +239,23 @@
 
     .ranking-readout {
       display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 0.65rem;
       margin-top: 1rem;
+    }
+
+    @media (max-width: 700px) {
+      .ranking-readout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .visual-bulb-selector {
+      margin-top: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--panel-bg);
     }
 
     .readout-line {
@@ -333,7 +348,6 @@
       <h1>Circuit Brightness Ranking Game</h1>
       <p>
         Rank identical bulbs from brightest to dimmest in randomly generated series-parallel circuits.
-        The game checks the voltage across each bulb internally, but the puzzle is meant to be solved conceptually.
       </p>
     </div>
   </header>
@@ -342,34 +356,17 @@
     <section class="card" aria-labelledby="how-to-title">
       <h2 id="how-to-title">How to use</h2>
       <p>
-        Look at the circuit and decide which bulb or bulbs are brightest. Click all bulbs that belong in the
-        brightest group. Then choose <strong>Next dimmer group</strong> and click the next set of equal-brightness
-        bulbs. Continue until every bulb is placed.
-      </p>
-      <p>
-        Bulbs in the same group are treated as equally bright. For example,
-        <strong>A = D &gt; B = C</strong> means A and D are tied for brightest, while B and C are tied for dimmer.
+        Rank the brighteness of the bulbs from brightest to dimmest. 
+        <br><br>Click all bulbs that belong in the same brightest group. Move between brightness groupd by selecting <strong>Next dimmer group</strong> and <strong>Previous group</strong>.
       </p>
       <p class="note">
-        Keyboard option: use the bulb buttons in the controls panel, or use the listed keyboard shortcuts.
+        Keyboard shortcuts listed below, after Game actions.
       </p>
     </section>
 
     <div class="layout-grid">
       <section class="card" aria-labelledby="controls-title">
         <h2 id="controls-title">Controls</h2>
-
-        <fieldset>
-          <legend>Build your ranking</legend>
-          <p id="current-group-readout">
-            Current brightness group: <strong id="currentGroupNumber">1</strong>
-          </p>
-          <div class="bulb-button-grid" id="bulbButtonGrid" aria-label="Bulb selection buttons"></div>
-          <p class="note">
-            Click a bulb once to add it to the current brightness group. Selected bulbs are marked in the center
-            of the bulb on the diagram.
-          </p>
-        </fieldset>
 
         <fieldset>
           <legend>Game actions</legend>
@@ -412,20 +409,31 @@
           The same state information is provided in the ranking readout and bulb table below.
         </p>
 
-        <div class="status-box" role="status" aria-live="polite" aria-atomic="true">
-          <p><strong>Circuit description:</strong> <span id="circuitDescriptionText"></span></p>
-          <p class="note" id="feedbackText">Click the brightest bulb or bulbs first.</p>
-        </div>
+        <section class="visual-bulb-selector" aria-labelledby="build-ranking-title">
+          <h3 id="build-ranking-title">Build your ranking</h3>
+          <p id="current-group-readout">
+            Current brightness group: <strong id="currentGroupNumber">1</strong>
+          </p>
+          <div class="bulb-button-grid" id="bulbButtonGrid" aria-label="Bulb selection buttons"></div>
 
-        <div class="ranking-readout" aria-live="polite" aria-atomic="true">
-          <div class="readout-line">
-            <strong>Your ranking</strong>
-            <span id="userRankingText">(no bulbs selected yet)</span>
+          <div class="ranking-readout" aria-live="polite" aria-atomic="true">
+            <div class="readout-line">
+              <strong>Your ranking</strong>
+              <span id="userRankingText">(no bulbs selected yet)</span>
+            </div>
+            <div class="readout-line" id="correctAnswerLine" hidden>
+              <strong>Correct ranking</strong>
+              <span id="correctRankingText"></span>
+            </div>
           </div>
-          <div class="readout-line" id="correctAnswerLine" hidden>
-            <strong>Correct ranking</strong>
-            <span id="correctRankingText"></span>
+
+          <div class="status-box compact-status" role="status" aria-live="polite" aria-atomic="true">
+            <p id="feedbackText">Click the brightest bulb or bulbs first.</p>
           </div>
+        </section>
+
+        <div class="status-box">
+          <p><strong>Circuit description:</strong> <span id="circuitDescriptionText"></span></p>
         </div>
       </section>
     </div>
@@ -1056,16 +1064,49 @@
       };
     }
 
+    function removeBulbFromRanking(state, label) {
+      let removedFromGroup = null;
+
+      for (let i = 0; i < state.userGroups.length; i++) {
+        const index = state.userGroups[i].indexOf(label);
+
+        if (index !== -1) {
+          state.userGroups[i].splice(index, 1);
+          removedFromGroup = i + 1;
+          break;
+        }
+      }
+
+      state.selected.delete(label);
+
+      // Remove empty groups, then preserve one usable current group.
+      state.userGroups = state.userGroups.filter(group => group.length > 0);
+
+      if (state.userGroups.length === 0) {
+        state.userGroups = [[]];
+      } else if (state.selected.size < state.bulbs.length) {
+        state.userGroups.push([]);
+      }
+
+      state.feedback = removedFromGroup === null
+        ? `Bulb ${label} was not in your ranking.`
+        : `Removed bulb ${label} from brightness group ${removedFromGroup}.`;
+
+      state.showAnswer = false;
+    }
+
     function handleBulbClick(state, label) {
       if (state.selected.has(label)) {
-        state.feedback = `Bulb ${label} is already in your ranking.`;
+        removeBulbFromRanking(state, label);
         updateAll();
         return;
       }
+
       state.userGroups[state.userGroups.length - 1].push(label);
       state.selected.add(label);
       state.feedback = `Added bulb ${label} to brightness group ${state.userGroups.length}.`;
       state.showAnswer = false;
+
       updateAll();
     }
 
@@ -1150,15 +1191,14 @@
 
     function updateBulbButtons() {
       bulbButtonGrid.innerHTML = "";
-      for (const bulb of state.bulbs) {
+      const sortedBulbs = state.bulbs.slice().sort((a, b) => a.label.localeCompare(b.label));
+
+      for (const bulb of sortedBulbs) {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "bulb-select-button";
         button.textContent = `Bulb ${bulb.label}`;
         button.setAttribute("aria-pressed", state.selected.has(bulb.label) ? "true" : "false");
-        if (state.selected.has(bulb.label)) {
-          button.disabled = true;
-        }
         button.addEventListener("click", () => handleBulbClick(state, bulb.label));
         bulbButtonGrid.appendChild(button);
       }
@@ -1193,7 +1233,9 @@
 
     function updateBulbTable() {
       bulbTableBody.innerHTML = "";
-      for (const bulb of state.bulbs) {
+      const sortedBulbs = state.bulbs.slice().sort((a, b) => a.label.localeCompare(b.label));
+
+      for (const bulb of sortedBulbs) {
         const row = document.createElement("tr");
         const bulbCell = document.createElement("th");
         bulbCell.scope = "row";
