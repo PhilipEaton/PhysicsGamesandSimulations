@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vector Direction Drawing Game</title>
+  <style>
+    :root {
+      --bg: #f7f7fb;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #4b5563;
+      --border: #cbd5e1;
+      --accent: #1d4ed8;
+      --accent-dark: #1e40af;
+      --success: #166534;
+      --warning: #92400e;
+      --error: #991b1b;
+      --focus: #f59e0b;
+      --canvas-bg: #ffffff;
+      --grid: #d1d5db;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .skip-link {
+      position: absolute;
+      left: 0.5rem;
+      top: -100px;
+      background: white;
+      color: black;
+      padding: 0.5rem;
+      border: 2px solid black;
+      z-index: 1000;
+    }
+
+    .skip-link:focus {
+      top: 0.5rem;
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    header {
+      background: #111827;
+      color: white;
+      padding: 1.25rem;
+    }
+
+    header h1 {
+      margin: 0 0 0.35rem 0;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+    }
+
+    header p {
+      margin: 0;
+      max-width: 72rem;
+    }
+
+    main {
+      width: min(1200px, calc(100% - 2rem));
+      margin: 1rem auto 2rem auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 950px) {
+      main {
+        grid-template-columns: 400px 1fr;
+        align-items: start;
+      }
+    }
+
+    section,
+    aside {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .intro-section,
+    .accessibility-section {
+      grid-column: 1 / -1;
+    }
+
+    h2,
+    h3 {
+      margin-top: 0;
+      line-height: 1.2;
+    }
+
+    fieldset {
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.85rem;
+      margin: 0 0 1rem 0;
+    }
+
+    legend {
+      font-weight: 700;
+      padding: 0 0.25rem;
+    }
+
+    label {
+      display: block;
+      font-weight: 650;
+      margin-bottom: 0.25rem;
+    }
+
+    input,
+    select,
+    button {
+      font: inherit;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 0.4rem;
+      background: white;
+      color: var(--text);
+    }
+
+    input:focus,
+    select:focus,
+    button:focus,
+    canvas:focus {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .control-group {
+      margin-bottom: 0.85rem;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    button {
+      border: 1px solid var(--accent-dark);
+      background: var(--accent);
+      color: white;
+      padding: 0.55rem 0.85rem;
+      border-radius: 0.45rem;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:hover {
+      background: var(--accent-dark);
+    }
+
+    button.secondary {
+      background: white;
+      color: var(--accent-dark);
+    }
+
+    button.secondary:hover {
+      background: #eff6ff;
+    }
+
+    button.danger {
+      border-color: #7f1d1d;
+      background: #b91c1c;
+    }
+
+    button.danger:hover {
+      background: #991b1b;
+    }
+
+    .summary-box {
+      border-left: 5px solid var(--accent);
+      background: #eff6ff;
+      padding: 0.75rem;
+      border-radius: 0.45rem;
+      margin-top: 0.75rem;
+    }
+
+    .target-card {
+      border-left: 6px solid var(--warning);
+      background: #fffbeb;
+      padding: 0.85rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .target-card p {
+      margin: 0.25rem 0;
+    }
+
+    .target-phrase {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .status {
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      margin-top: 0.75rem;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+    }
+
+    .status.good {
+      border-color: #86efac;
+      background: #f0fdf4;
+      color: var(--success);
+    }
+
+    .status.bad {
+      border-color: #fca5a5;
+      background: #fef2f2;
+      color: var(--error);
+    }
+
+    .status.warn {
+      border-color: #fcd34d;
+      background: #fffbeb;
+      color: var(--warning);
+    }
+
+    .canvas-wrap {
+      width: 100%;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      background: var(--canvas-bg);
+      padding: 0.5rem;
+    }
+
+    canvas {
+      width: 100%;
+      max-width: 760px;
+      display: block;
+      margin: 0 auto;
+      border-radius: 0.5rem;
+      touch-action: none;
+      background: var(--canvas-bg);
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .score-card {
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      background: #f8fafc;
+    }
+
+    .score-card strong {
+      display: block;
+      font-size: 1.4rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--border);
+      padding: 0.5rem;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #f1f5f9;
+    }
+
+    caption {
+      caption-side: top;
+      text-align: left;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .hint,
+    .small {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    kbd {
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 0.25rem;
+      padding: 0.05rem 0.25rem;
+      background: #f8fafc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header>
+    <h1>Vector Direction Drawing Game</h1>
+    <p>
+      Practice translating direction phrases into arrows. Draw an arrow with the correct direction;
+      the length does not matter.
+    </p>
+  </header>
+
+  <main id="main">
+    <section class="intro-section" aria-labelledby="how-heading">
+      <fieldset>
+      <h2 id="how-heading">How to use</h2>
+      <ol>
+        <li>Read the target direction, such as “40° north of west.”</li>
+        <li>Draw an arrow from the origin by clicking or dragging in the graph area.</li>
+        <li>The live angle readout uses the last main axis your arrow touched while drawing as the reference axis.</li>
+        <li>Choose “Check direction” to see whether the direction of your vector <strong>exactly</strong> matches the target direction.</li>
+        <li>The length of your arrow doesn't matter, but the direction of very short arrows is unclear and are not checked as a result.</li>
+      </ol>
+      <p>
+        Keyboard users can use the angle and length controls, or focus the graph and use arrow keys to rotate the arrow.
+      </p>
+    </fieldset>
+
+    <fieldset>
+      <h3 id="note-heading">Direction convention</h3>
+      <p>
+        “North of east” means start facing east and turn toward north.<br>
+        “East of north” means start facing north and turn toward east.<br>
+        Those are different directions, even if the same number of degrees appears.
+      </p>
+      <p>
+        While drawing, the angle readout uses the last axis your arrow touched as the reference axis.
+      </p>
+    </fieldset>
+    </section>
+
+    <section aria-labelledby="controls-heading">
+      <h2 id="controls-heading">Game controls</h2>
+
+      <div class="target-card" aria-live="polite">
+        <p><strong>Target direction</strong></p>
+        <p id="targetPhrase" class="target-phrase">Loading...</p>
+        <p class="hint">Draw any length arrow in this direction.</p>
+      </div>
+
+      <fieldset>
+        <legend>Keyboard drawing controls</legend>
+
+        <div class="control-group">
+          <label for="angleSlider">Arrow direction angle</label>
+          <input id="angleSlider" type="range" min="0" max="359" step="1" value="0" />
+          <p id="angleSliderHelp" class="hint">
+            This uses standard math angles: 0° is east/right, 90° is north/up, 180° is west/left, and 270° is south/down. When the slider passes through one of these axes, that axis becomes the reference axis.
+          </p>
+        </div>
+
+        <div class="button-row">
+          <button type="button" class="secondary" id="rotateLeftBtn">Rotate counterclockwise 1°</button>
+          <button type="button" class="secondary" id="rotateRightBtn">Rotate clockwise 1°</button>
+        </div>
+
+        <p class="hint">
+          When the graph has focus, use <kbd>Left</kbd>/<kbd>Right</kbd> to rotate counterclockwise and clockwise, respectively.<br>
+          Hold <kbd>Shift</kbd> for 5° steps. Passing through an axis makes that axis the active reference axis.
+        </p>
+      </fieldset>
+
+      <section aria-labelledby="score-heading">
+        <h3 id="score-heading">Score</h3>
+        <div class="score-grid">
+          <div class="score-card">
+            Correct
+            <strong id="correctCount">0</strong>
+          </div>
+          <div class="score-card">
+            Attempts
+            <strong id="attemptCount">0</strong>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <aside aria-labelledby="visual-heading">
+      <fieldset>
+        <legend>Problem controls</legend>
+        <div class="button-row">
+          <button type="button" id="newProblemBtn">New direction</button>
+          <button type="button" class="secondary" id="checkBtn">Check direction</button>
+          <button type="button" class="secondary" id="clearBtn">Clear arrow</button>
+          <button type="button" class="danger" id="resetScoreBtn">Reset score</button>
+        </div>
+        <div id="feedback" class="status" aria-live="assertive">
+          Draw an arrow, then check your direction.
+        </div>
+      </fieldset>
+
+
+      <h2 id="visual-heading">Drawing area</h2>
+      <div class="canvas-wrap">
+        <canvas
+          id="vectorCanvas"
+          width="760"
+          height="560"
+          tabindex="0"
+          role="img"
+          aria-describedby="canvasDescription"
+        ></canvas>
+      </div>
+
+      <p id="canvasDescription" class="summary-box">
+        The graph shows axes and the arrow you draw from the origin. The target direction is intentionally not repeated inside the drawing area.
+      </p>
+
+      <section aria-labelledby="data-heading">
+        <h3 id="data-heading">Informational numeric table</h3>
+        <table>
+          <caption>Current target and drawn direction</caption>
+          <tbody>
+            <tr>
+              <th scope="row">Target phrase</th>
+              <td id="tableTarget">Loading...</td>
+            </tr>
+            <tr>
+              <th scope="row">Drawn direction phrase</th>
+              <td id="tableDrawnPhrase">No arrow drawn</td>
+            </tr>
+            <tr>
+              <th scope="row">Drawn standard angle</th>
+              <td id="tableDrawnAngle">No arrow drawn</td>
+            </tr>
+            <tr>
+              <th scope="row">Target standard angle</th>
+              <td id="tableTargetAngle">Hidden until a correct answer</td>
+            </tr>
+            <tr>
+              <th scope="row">Last check result</th>
+              <td id="tableResult">Not checked yet</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </aside>
+
+    <div id="liveStatus" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+  </main>
+
+  <script>
+    const canvas = document.getElementById("vectorCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const targetPhrase = document.getElementById("targetPhrase");
+    const feedback = document.getElementById("feedback");
+    const canvasDescription = document.getElementById("canvasDescription");
+    const liveStatus = document.getElementById("liveStatus");
+
+    const newProblemBtn = document.getElementById("newProblemBtn");
+    const checkBtn = document.getElementById("checkBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const resetScoreBtn = document.getElementById("resetScoreBtn");
+
+    const angleSlider = document.getElementById("angleSlider");
+    const rotateLeftBtn = document.getElementById("rotateLeftBtn");
+    const rotateRightBtn = document.getElementById("rotateRightBtn");
+
+    const correctCount = document.getElementById("correctCount");
+    const attemptCount = document.getElementById("attemptCount");
+
+    const tableTarget = document.getElementById("tableTarget");
+    const tableDrawnPhrase = document.getElementById("tableDrawnPhrase");
+    const tableDrawnAngle = document.getElementById("tableDrawnAngle");
+    const tableTargetAngle = document.getElementById("tableTargetAngle");
+    const tableResult = document.getElementById("tableResult");
+
+    const origin = { x: canvas.width / 2, y: canvas.height / 2 };
+    const minCheckLength = 35;
+
+    let target = null;
+    let hasArrow = false;
+    let arrowAngle = 0;
+    let arrowLength = 150;
+    let correct = 0;
+    let attempts = 0;
+    let solvedCurrent = false;
+    let isDragging = false;
+    let activeReferenceAxis = "East";
+
+    const directionOptions = [
+      { base: "East", toward: "North", baseAngle: 0, sign: 1 },
+      { base: "East", toward: "South", baseAngle: 0, sign: -1 },
+      { base: "North", toward: "East", baseAngle: 90, sign: -1 },
+      { base: "North", toward: "West", baseAngle: 90, sign: 1 },
+      { base: "West", toward: "North", baseAngle: 180, sign: -1 },
+      { base: "West", toward: "South", baseAngle: 180, sign: 1 },
+      { base: "South", toward: "East", baseAngle: 270, sign: 1 },
+      { base: "South", toward: "West", baseAngle: 270, sign: -1 }
+    ];
+
+    function normalizeAngle(deg) {
+      return ((deg % 360) + 360) % 360;
+    }
+
+    function smallestAngleDifference(a, b) {
+      const diff = Math.abs(normalizeAngle(a) - normalizeAngle(b));
+      return Math.min(diff, 360 - diff);
+    }
+
+    function formatNumber(value, digits = 1) {
+      if (!Number.isFinite(value)) return "not available";
+      const rounded = Number(value.toFixed(digits));
+      return String(rounded);
+    }
+
+    function setFeedback(message, type = "") {
+      feedback.textContent = message;
+      feedback.className = "status";
+      if (type) feedback.classList.add(type);
+    }
+
+    function getArrowEnd() {
+      const rad = arrowAngle * Math.PI / 180;
+      return {
+        x: origin.x + arrowLength * Math.cos(rad),
+        y: origin.y - arrowLength * Math.sin(rad)
+      };
+    }
+
+    function getTargetAngle(option, angle) {
+      return normalizeAngle(option.baseAngle + option.sign * angle);
+    }
+
+    function makeTarget() {
+      const option = directionOptions[Math.floor(Math.random() * directionOptions.length)];
+      const angle = Math.floor(Math.random() * 90) + 1;
+      return {
+        angle,
+        base: option.base,
+        toward: option.toward,
+        standardAngle: getTargetAngle(option, angle),
+        phrase: `${angle}° ${option.toward.toLowerCase()} of ${option.base.toLowerCase()}`,
+        referenceAxis: option.base
+      };
+    }
+
+    function chooseNewProblem() {
+      target = makeTarget();
+      hasArrow = false;
+      activeReferenceAxis = target.referenceAxis;
+      previousSliderAngle = Number(angleSlider.value);
+      solvedCurrent = false;
+      tableTargetAngle.textContent = "Hidden until a correct answer";
+      tableResult.textContent = "Not checked yet";
+      setFeedback("New direction loaded. Draw an arrow, then check your direction.");
+      updateAll();
+      draw();
+      liveStatus.textContent = `New target direction: ${target.phrase}.`;
+    }
+
+    function clearArrow() {
+      hasArrow = false;
+      activeReferenceAxis = target.referenceAxis;
+      solvedCurrent = false;
+      tableTargetAngle.textContent = "Hidden until a correct answer";
+      tableResult.textContent = "Arrow cleared";
+      setFeedback("Arrow cleared. Draw a new arrow and check your direction.");
+      updateAll();
+      draw();
+    }
+
+    function resetScore() {
+      correct = 0;
+      attempts = 0;
+      correctCount.textContent = "0";
+      attemptCount.textContent = "0";
+      tableResult.textContent = "Score reset";
+      setFeedback("Score reset. Keep practicing with the current direction.");
+    }
+
+    function getAxisAngle(axisName) {
+      if (axisName === "East") return 0;
+      if (axisName === "North") return 90;
+      if (axisName === "West") return 180;
+      return 270;
+    }
+
+    function getTowardFromAxis(axisName, angle) {
+      const axisAngle = getAxisAngle(axisName);
+      const ccwDiff = normalizeAngle(angle - axisAngle);
+      const cwDiff = normalizeAngle(axisAngle - angle);
+
+      if (ccwDiff <= cwDiff) {
+        return axisAngle === 0 ? "north" :
+               axisAngle === 90 ? "west" :
+               axisAngle === 180 ? "south" : "east";
+      }
+
+      return axisAngle === 0 ? "south" :
+             axisAngle === 90 ? "east" :
+             axisAngle === 180 ? "north" : "west";
+    }
+
+    function getDegreesFromReference(axisName, angle) {
+      const axisAngle = getAxisAngle(axisName);
+      return Math.round(smallestAngleDifference(angle, axisAngle));
+    }
+
+    function getAxisReferencedPhrase(angle) {
+      const axisName = activeReferenceAxis;
+      const degrees = getDegreesFromReference(axisName, angle);
+
+      if (degrees === 0) {
+        return `${axisName.toLowerCase()}, or 0° from ${axisName.toLowerCase()}`;
+      }
+
+      const toward = getTowardFromAxis(axisName, angle);
+      return `${degrees}° ${toward} of ${axisName.toLowerCase()}`;
+    }
+
+    function updateReferenceAxisFromPoint(dx, dy) {
+      const nearAxisPixels = 10;
+
+      if (Math.abs(dy) <= nearAxisPixels && Math.abs(dx) > nearAxisPixels) {
+        activeReferenceAxis = dx >= 0 ? "East" : "West";
+      }
+
+      if (Math.abs(dx) <= nearAxisPixels && Math.abs(dy) > nearAxisPixels) {
+        activeReferenceAxis = dy >= 0 ? "North" : "South";
+      }
+    }
+
+    function updateReferenceAxisFromKeyboard() {
+      const axes = [
+        { name: "East", angle: 0 },
+        { name: "North", angle: 90 },
+        { name: "West", angle: 180 },
+        { name: "South", angle: 270 }
+      ];
+
+      let best = axes[0];
+      let bestDiff = smallestAngleDifference(arrowAngle, best.angle);
+
+      axes.forEach(axis => {
+        const diff = smallestAngleDifference(arrowAngle, axis.angle);
+        if (diff < bestDiff) {
+          best = axis;
+          bestDiff = diff;
+        }
+      });
+
+      activeReferenceAxis = best.name;
+    }
+
+    function updateAll() {
+      targetPhrase.textContent = target.phrase;
+      tableTarget.textContent = target.phrase;
+
+      if (!hasArrow) {
+        canvasDescription.textContent = `Target direction: ${target.phrase}. No arrow has been drawn yet.`;
+        tableDrawnPhrase.textContent = "No arrow drawn";
+        tableDrawnAngle.textContent = "No arrow drawn";
+        return;
+      }
+
+      const phrase = getAxisReferencedPhrase(arrowAngle);
+      const degrees = getDegreesFromReference(activeReferenceAxis, arrowAngle);
+      canvasDescription.textContent = `You arrow is currently ${degrees}° from the selected ${activeReferenceAxis.toLowerCase()} axis.`;
+      tableDrawnPhrase.textContent = phrase;
+      tableDrawnAngle.textContent = `${formatNumber(normalizeAngle(arrowAngle), 0)}° measured counterclockwise from east/right.`;
+      angleSlider.value = String(Math.round(normalizeAngle(arrowAngle)));
+    }
+
+    function checkDirection() {
+      if (!hasArrow || arrowLength < minCheckLength) {
+        setFeedback("Draw a longer arrow before checking. Very short arrows do not have a clear direction.", "warn");
+        tableResult.textContent = "Need a longer arrow";
+        return;
+      }
+
+      const drawnDegrees = getDegreesFromReference(activeReferenceAxis, arrowAngle);
+      const drawnToward = getTowardFromAxis(activeReferenceAxis, arrowAngle);
+      const referenceMatches = activeReferenceAxis === target.referenceAxis;
+      const towardMatches = drawnToward === target.toward.toLowerCase();
+      const angleMatches = drawnDegrees === target.angle;
+
+      const error = smallestAngleDifference(arrowAngle, target.standardAngle);
+      attempts += 1;
+      attemptCount.textContent = String(attempts);
+
+      if (referenceMatches && towardMatches && angleMatches) {
+        if (!solvedCurrent) {
+          correct += 1;
+          correctCount.textContent = String(correct);
+        }
+
+        solvedCurrent = true;
+        tableTargetAngle.textContent = `${formatNumber(target.standardAngle, 0)}° measured counterclockwise from east/right.`;
+        tableResult.textContent = `Correct!`;
+        setFeedback(
+          `Correct!`,
+          "good"
+        );
+      } else {
+        solvedCurrent = false;
+        tableTargetAngle.textContent = "Hidden until a correct answer";
+        tableResult.textContent = `Not correct yet. Your rounded drawn direction is ${getAxisReferencedPhrase(arrowAngle)}.`;
+        setFeedback(
+          `Not quite. Your arrow currently reads as ${getAxisReferencedPhrase(arrowAngle)}, ` +
+          `but the target is ${target.phrase}. Make sure you touch the correct reference axis first, then turn the right way.`,
+          "bad"
+        );
+      }
+
+      updateAll();
+      draw();
+    }
+
+    function setArrowFromCanvasPoint(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (clientX - rect.left) * scaleX;
+      const y = (clientY - rect.top) * scaleY;
+
+      const dx = x - origin.x;
+      const dy = origin.y - y;
+      const length = Math.sqrt(dx * dx + dy * dy);
+
+      if (length < 5) {
+        return;
+      }
+
+      updateReferenceAxisFromPoint(dx, dy);
+
+      hasArrow = true;
+      arrowAngle = normalizeAngle(Math.atan2(dy, dx) * 180 / Math.PI);
+      arrowLength = Math.max(30, Math.min(230, length));
+      solvedCurrent = false;
+      tableTargetAngle.textContent = "Hidden until a correct answer";
+      tableResult.textContent = "Not checked yet";
+      updateAll();
+      draw();
+    }
+
+    function adjustAngle(delta) {
+      hasArrow = true;
+      arrowAngle = normalizeAngle(arrowAngle + delta);
+
+      if (smallestAngleDifference(arrowAngle, 0) <= 1) activeReferenceAxis = "East";
+      if (smallestAngleDifference(arrowAngle, 90) <= 1) activeReferenceAxis = "North";
+      if (smallestAngleDifference(arrowAngle, 180) <= 1) activeReferenceAxis = "West";
+      if (smallestAngleDifference(arrowAngle, 270) <= 1) activeReferenceAxis = "South";
+
+      solvedCurrent = false;
+      tableTargetAngle.textContent = "Hidden until a correct answer";
+      tableResult.textContent = "Not checked yet";
+      updateAll();
+      draw();
+    }
+
+    function adjustLength(delta) {
+      hasArrow = true;
+      arrowLength = Math.max(30, Math.min(230, arrowLength + delta));
+      updateAll();
+      draw();
+    }
+
+    function drawGrid() {
+      ctx.save();
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = "#d1d5db";
+      ctx.lineWidth = 1;
+
+      const spacing = 40;
+      for (let x = origin.x % spacing; x < canvas.width; x += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+
+      for (let y = origin.y % spacing; y < canvas.height; y += spacing) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(0, origin.y);
+      ctx.lineTo(canvas.width, origin.y);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(origin.x, 0);
+      ctx.lineTo(origin.x, canvas.height);
+      ctx.stroke();
+
+      ctx.fillStyle = "#111827";
+      ctx.font = "16px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("North / Up", origin.x, 24);
+      ctx.fillText("South / Down", origin.x, canvas.height - 12);
+
+      ctx.textAlign = "left";
+      ctx.fillText("East / Right", canvas.width - 125, origin.y - 10);
+
+      ctx.textAlign = "right";
+      ctx.fillText("West / Left", 125, origin.y - 10);
+
+      ctx.fillStyle = "#111827";
+      ctx.beginPath();
+      ctx.arc(origin.x, origin.y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawArrow(fromX, fromY, toX, toY) {
+      const headLength = 16;
+      const angle = Math.atan2(toY - fromY, toX - fromX);
+
+      ctx.save();
+
+      ctx.strokeStyle = "#1d4ed8";
+      ctx.fillStyle = "#1d4ed8";
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(toX, toY);
+      ctx.lineTo(
+        toX - headLength * Math.cos(angle - Math.PI / 6),
+        toY - headLength * Math.sin(angle - Math.PI / 6)
+      );
+      ctx.lineTo(
+        toX - headLength * Math.cos(angle + Math.PI / 6),
+        toY - headLength * Math.sin(angle + Math.PI / 6)
+      );
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawAngleArc() {
+      if (!hasArrow) return;
+
+      const base = getAxisAngle(activeReferenceAxis);
+      const clockwiseDegrees = normalizeAngle(base - arrowAngle);
+      const counterclockwiseDegrees = normalizeAngle(arrowAngle - base);
+
+      let startDeg;
+      let endDeg;
+      let anticlockwiseCanvas;
+
+      if (counterclockwiseDegrees <= clockwiseDegrees) {
+        startDeg = base;
+        endDeg = arrowAngle;
+        anticlockwiseCanvas = true;
+      } else {
+        startDeg = base;
+        endDeg = arrowAngle;
+        anticlockwiseCanvas = false;
+      }
+
+      const startRad = -startDeg * Math.PI / 180;
+      const endRad = -endDeg * Math.PI / 180;
+      const radius = 55;
+
+      ctx.save();
+      ctx.strokeStyle = "#92400e";
+      ctx.fillStyle = "#92400e";
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      ctx.arc(origin.x, origin.y, radius, startRad, endRad, anticlockwiseCanvas);
+      ctx.stroke();
+
+      const end = getArrowEnd();
+      const degrees = getDegreesFromReference(activeReferenceAxis, arrowAngle);
+
+      ctx.font = "bold 15px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`${degrees}°`, end.x, end.y - 20);
+
+      ctx.restore();
+    }
+
+    function draw() {
+      drawGrid();
+
+      if (hasArrow) {
+        const end = getArrowEnd();
+        drawArrow(origin.x, origin.y, end.x, end.y);
+        drawAngleArc();
+      }
+
+      ctx.save();
+      ctx.fillStyle = "#111827";
+      ctx.font = "16px system-ui, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText("Draw from the origin.", 20, canvas.height - 48);
+      ctx.fillText(hasArrow ? `Your arrow angle: ${getDegreesFromReference(activeReferenceAxis, arrowAngle)}° from selected axis` : "Your arrow: not drawn yet", 20, canvas.height - 24);
+      ctx.restore();
+    }
+
+    canvas.addEventListener("mousedown", event => {
+      isDragging = true;
+      setArrowFromCanvasPoint(event.clientX, event.clientY);
+    });
+
+    window.addEventListener("mousemove", event => {
+      if (!isDragging) return;
+      setArrowFromCanvasPoint(event.clientX, event.clientY);
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
+
+    canvas.addEventListener("touchstart", event => {
+      event.preventDefault();
+      isDragging = true;
+      setArrowFromCanvasPoint(event.touches[0].clientX, event.touches[0].clientY);
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", event => {
+      event.preventDefault();
+      if (!isDragging) return;
+      setArrowFromCanvasPoint(event.touches[0].clientX, event.touches[0].clientY);
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", () => {
+      isDragging = false;
+    });
+
+    canvas.addEventListener("keydown", event => {
+      let handled = true;
+
+      if (event.key === "ArrowLeft") {
+        adjustAngle(event.shiftKey ? 5 : 1);
+      } else if (event.key === "ArrowRight") {
+        adjustAngle(event.shiftKey ? -5 : -1);
+      } else if (event.key === "Enter") {
+        checkDirection();
+      } else {
+        handled = false;
+      }
+
+      if (handled) event.preventDefault();
+    });
+
+    let previousSliderAngle = Number(angleSlider.value);
+
+    function updateReferenceAxisFromAngleSlider(previousAngle, nextAngle) {
+      const axes = [
+        { name: "East", angle: 0 },
+        { name: "North", angle: 90 },
+        { name: "West", angle: 180 },
+        { name: "South", angle: 270 }
+      ];
+
+      axes.forEach(axis => {
+        const previousDiff = smallestAngleDifference(previousAngle, axis.angle);
+        const nextDiff = smallestAngleDifference(nextAngle, axis.angle);
+
+        if (nextDiff <= 1 || nextDiff < previousDiff && nextDiff <= 4) {
+          activeReferenceAxis = axis.name;
+        }
+      });
+    }
+
+    angleSlider.addEventListener("input", () => {
+      hasArrow = true;
+
+      const nextAngle = normalizeAngle(Number(angleSlider.value));
+      updateReferenceAxisFromAngleSlider(previousSliderAngle, nextAngle);
+
+      previousSliderAngle = nextAngle;
+      arrowAngle = nextAngle;
+      arrowLength = 150;
+
+      solvedCurrent = false;
+      tableTargetAngle.textContent = "Hidden until a correct answer";
+      tableResult.textContent = "Not checked yet";
+      updateAll();
+      draw();
+    });
+
+    newProblemBtn.addEventListener("click", chooseNewProblem);
+    checkBtn.addEventListener("click", checkDirection);
+    clearBtn.addEventListener("click", clearArrow);
+    resetScoreBtn.addEventListener("click", resetScore);
+
+    rotateLeftBtn.addEventListener("click", () => adjustAngle(1));
+    rotateRightBtn.addEventListener("click", () => adjustAngle(-1));
+
+    chooseNewProblem();
+  </script>
+</body>
+</html>
