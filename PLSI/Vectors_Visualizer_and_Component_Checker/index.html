@@ -356,7 +356,7 @@
       <ol>
         <li>Choose the direction vocabulary: compass directions or up/down/left/right.</li>
         <li>Enter the vector magnitude and direction.</li>
-        <li>Use the diagram to visualize the vector.</li>
+        <li>Use the diagram to visualize the vector immediately.</li>
         <li>Calculate the horizontal and vertical components yourself.</li>
         <li>Enter your components and check your answer. The calculated components stay hidden until your answers are close enough.</li>
       </ol>
@@ -367,16 +367,12 @@
 
       <fieldset>
         <legend>Direction language</legend>
-        <p class="hint">
-          Choose the vocabulary you want the diagram and controls to use.
-        </p>
 
         <div class="mode-buttons" role="radiogroup" aria-label="Direction vocabulary">
           <div>
             <input type="radio" name="mode" id="modeCompass" value="compass" checked />
             <label for="modeCompass">
               North / South / East / West
-              <span class="hint">Example: 30° north of east</span>
             </label>
           </div>
 
@@ -384,7 +380,6 @@
             <input type="radio" name="mode" id="modeScreen" value="screen" />
             <label for="modeScreen">
               Up / Down / Left / Right
-              <span class="hint">Example: 30° up of right</span>
             </label>
           </div>
         </div>
@@ -406,12 +401,12 @@
 
         <div class="two-col">
           <div class="control-group">
-            <label for="towardDirection">Angle measured toward</label>
+            <label for="towardDirection">Turn Direction</label>
             <select id="towardDirection"></select>
           </div>
 
           <div class="control-group">
-            <label for="baseDirection">Starting direction</label>
+            <label for="baseDirection">Reference direction</label>
             <select id="baseDirection"></select>
           </div>
         </div>
@@ -423,23 +418,10 @@
           <button type="button" class="secondary" id="magUp">Magnitude +1</button>
           <button type="button" class="secondary" id="angleDown">Angle −1°</button>
           <button type="button" class="secondary" id="angleUp">Angle +1°</button>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Animation controls</legend>
-        <p class="hint">
-          These controls animate the drawing of the vector. The animation does not reveal the components.
-        </p>
-
-        <div class="button-row">
-          <button type="button" id="playPause">Pause animation</button>
-          <button type="button" class="secondary" id="stepAnimation">Step</button>
-          <button type="button" class="secondary" id="stopAnimation">Stop</button>
           <button type="button" class="danger" id="resetAll">Reset all</button>
         </div>
       </fieldset>
-    </section>
+</section>
 
     <aside aria-labelledby="visual-heading">
       <h2 id="visual-heading">Vector visualization</h2>
@@ -466,20 +448,15 @@
           <div class="control-group">
             <label for="xGuess">Horizontal component</label>
             <input id="xGuess" type="number" step="0.01" inputmode="decimal" />
-            <p class="hint">Positive means east/right. Negative means west/left.</p>
+            <p class="hint">Positive: east/right. Negative: west/left.</p>
           </div>
 
           <div class="control-group">
             <label for="yGuess">Vertical component</label>
             <input id="yGuess" type="number" step="0.01" inputmode="decimal" />
-            <p class="hint">Positive means north/up. Negative means south/down.</p>
+            <p class="hint">Positive: north/up. Negative: south/down.</p>
           </div>
         </div>
-
-        <p class="hint">
-          The checking tolerance is set automatically by the tool and cannot be changed by students.
-        </p>
-
         <div class="button-row">
           <button type="button" id="checkAnswer">Check components</button>
           <button type="button" class="secondary" id="clearGuesses">Clear guesses</button>
@@ -492,7 +469,7 @@
 
 
       <section aria-labelledby="answer-heading">
-        <h3 id="answer-heading">Component check status</h3>
+        <h3 id="answer-heading">Solutions (to 2 decimal places):</h3>
         <p>
           Horizontal component:
           <span id="xReveal" class="not-revealed">not revealed yet</span>
@@ -504,7 +481,7 @@
       </section>
 
       <section aria-labelledby="table-heading">
-        <h3 id="table-heading">Accessible numeric table</h3>
+        <h3 id="table-heading">Informational numeric table</h3>
 
         <table>
           <caption>Known vector information and student answer status</caption>
@@ -577,9 +554,6 @@
     const angleDownButton = document.getElementById("angleDown");
     const angleUpButton = document.getElementById("angleUp");
 
-    const playPauseButton = document.getElementById("playPause");
-    const stepAnimationButton = document.getElementById("stepAnimation");
-    const stopAnimationButton = document.getElementById("stopAnimation");
 
     const directionSets = {
       compass: {
@@ -623,10 +597,6 @@
     };
 
     let revealed = false;
-    let animationProgress = 1;
-    let animationRunning = true;
-    let animationFrameId = null;
-    let lastTime = null;
 
     function getMode() {
       return modeCompass.checked ? "compass" : "screen";
@@ -795,9 +765,7 @@
       const set = directionSets[mode];
 
       const summary = [
-        `The current vector has magnitude ${formatNumber(magnitude, 2)} and direction ${phrase}.`,
-        `Horizontal components are positive toward ${set.positiveX} and negative toward ${set.negativeX}.`,
-        `Vertical components are positive toward ${set.positiveY} and negative toward ${set.negativeY}.`
+        `The current vector has magnitude ${formatNumber(magnitude, 2)} and direction ${phrase}.`
       ];
 
       if (revealed) {
@@ -807,8 +775,6 @@
           `The horizontal component is ${formatNumber(components.x, 2)} ` +
           `and the vertical component is ${formatNumber(components.y, 2)}.`
         );
-      } else {
-        summary.push("The calculated components are currently hidden.");
       }
 
       canvasDescription.textContent = summary.join(" ");
@@ -898,10 +864,6 @@
 
       resetRevealOnly();
 
-      animationProgress = 1;
-      animationRunning = true;
-      playPauseButton.textContent = "Pause animation";
-
       setFeedback("Tool reset. Enter your components, then choose “Check components.”");
 
       updateDirectionAndTables();
@@ -918,7 +880,6 @@
       resetRevealOnly();
       setFeedback("Vector changed. Component answers are hidden until checked again.");
       updateDirectionAndTables();
-      restartAnimation();
       draw();
     }
 
@@ -1074,22 +1035,17 @@
 
       drawAxes(originX, originY, gridScale);
 
-      const displayedX = components.x * scale * animationProgress;
-      const displayedY = components.y * scale * animationProgress;
-
-      const endX = originX + displayedX;
-      const endY = originY - displayedY;
+      const endX = originX + components.x * scale;
+      const endY = originY - components.y * scale;
 
       if (magnitude > 0) {
         drawArrow(originX, originY, endX, endY, "vector");
       }
 
-      if (animationProgress >= 0.99) {
-        if (revealed) {
-          drawRevealedComponentLabels(originX, originY, endX, endY, components);
-        } else {
-          drawHiddenComponentGuides(originX, originY, endX, endY);
-        }
+      if (revealed) {
+        drawRevealedComponentLabels(originX, originY, endX, endY, components);
+      } else {
+        drawHiddenComponentGuides(originX, originY, endX, endY);
       }
 
       ctx.save();
@@ -1102,61 +1058,10 @@
       ctx.restore();
     }
 
-    function animate(timestamp) {
-      if (!lastTime) {
-        lastTime = timestamp;
-      }
-
-      const elapsed = timestamp - lastTime;
-      lastTime = timestamp;
-
-      if (animationRunning && animationProgress < 1) {
-        animationProgress += elapsed / 900;
-        animationProgress = Math.min(1, animationProgress);
-        draw();
-      }
-
-      animationFrameId = requestAnimationFrame(animate);
-    }
-
-    function restartAnimation() {
-      animationProgress = 0;
-      animationRunning = true;
-      playPauseButton.textContent = "Pause animation";
-      lastTime = null;
-    }
-
-    function stepAnimation() {
-      animationRunning = false;
-      playPauseButton.textContent = "Play animation";
-      animationProgress = Math.min(1, animationProgress + 0.1);
-      draw();
-    }
-
-    function stopAnimation() {
-      animationRunning = false;
-      animationProgress = 0;
-      playPauseButton.textContent = "Play animation";
-      draw();
-    }
-
-    function toggleAnimation() {
-      animationRunning = !animationRunning;
-      playPauseButton.textContent = animationRunning ? "Pause animation" : "Play animation";
-
-      if (animationRunning && animationProgress >= 1) {
-        animationProgress = 0;
-      }
-
-      lastTime = null;
-      draw();
-    }
-
     function onVectorChanged() {
       resetRevealOnly();
       setFeedback("Vector changed. Component answers are hidden until checked again.");
       updateDirectionAndTables();
-      restartAnimation();
       draw();
     }
 
@@ -1183,7 +1088,9 @@
 
     checkAnswerButton.addEventListener("click", checkAnswer);
     clearGuessesButton.addEventListener("click", clearGuesses);
-    resetAllButton.addEventListener("click", resetAll);
+    if (resetAllButton) {
+      resetAllButton.addEventListener("click", resetAll);
+    }
 
     magDownButton.addEventListener("click", () => {
       adjustInput(magnitudeInput, -1, 0, 999);
@@ -1201,20 +1108,12 @@
       adjustInput(angleInput, 1, 0, 90);
     });
 
-    playPauseButton.addEventListener("click", toggleAnimation);
-    stepAnimationButton.addEventListener("click", stepAnimation);
-    stopAnimationButton.addEventListener("click", stopAnimation);
 
     document.addEventListener("keydown", event => {
       const activeTag = document.activeElement.tagName.toLowerCase();
       const typing = activeTag === "input" || activeTag === "select" || activeTag === "textarea";
 
       if (typing) return;
-
-      if (event.key === " ") {
-        event.preventDefault();
-        toggleAnimation();
-      }
 
       if (event.key === "ArrowRight") {
         event.preventDefault();
@@ -1246,7 +1145,6 @@
     updateDirectionAndTables();
     draw();
 
-    animationFrameId = requestAnimationFrame(animate);
   </script>
 </body>
 </html>
